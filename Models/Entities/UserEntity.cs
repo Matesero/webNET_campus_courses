@@ -19,9 +19,9 @@ public class UserEntity
     public string Email { get; set; }
     
     public string PasswordHash { get; set; }
-    
-    public List<RoleEntity> Roles { get; set; }
 
+    public List<RoleEntity> Roles { get; set; } = [];
+    
     public static UserEntity Create(Guid id, string fullName, DateTime birthDate, string email, string passwordHash)
     {
         return new UserEntity(id, fullName, birthDate, email, passwordHash);

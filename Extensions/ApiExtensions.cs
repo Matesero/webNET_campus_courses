@@ -1,12 +1,12 @@
 ﻿using System.Text;
 using courses.Endpoints;
 using courses.Infrastructure;
+using courses.Models.enums;
+using courses.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace courses.Extensions;
 
@@ -15,6 +15,7 @@ public static class ApiExtensions
     public static void AddMappedEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapUsersEndpoints();
+        app.MapGroupsEndpoints();
     }
 
     public static void AddApiAuthentication(
@@ -38,6 +39,9 @@ public static class ApiExtensions
                 };
             });
 
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        
         services.AddAuthorization();
         
         services.AddSwaggerGen(c =>
@@ -54,6 +58,14 @@ public static class ApiExtensions
 
             c.OperationFilter<AuthorizeOperationFilter>();
         });
+    }
+
+    public static IEndpointConventionBuilder RequirePermissions<TBuilder>(
+        this TBuilder builder, params Permission[] permissions)
+        where TBuilder : IEndpointConventionBuilder
+    {
+        return builder.RequireAuthorization(policy =>
+            policy.AddRequirements(new PermissionRequirement(permissions)));
     }
 }
 

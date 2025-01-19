@@ -1,7 +1,9 @@
-﻿using courses.Infrastructure;
+﻿using System.Security.Claims;
+using courses.Infrastructure;
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace courses.Services;
 
@@ -10,7 +12,6 @@ public class UsersService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUsersRepository _usersRepository;
     private readonly IJwtProvider _jwtProvider;
-
 
     public UsersService(IUsersRepository usersRepository, IPasswordHasher passwordHasher, IJwtProvider jwtProvider)
     {
@@ -46,4 +47,51 @@ public class UsersService
         
         return response;
     }
+
+    [Authorize]
+    public async Task<UserProfileModel> GetProfile(string userId)
+    {
+        if (!Guid.TryParse(userId, out var id))
+        {
+            throw new Exception(); // обработать
+        }
+
+        var profile = await _usersRepository.GetById(id);
+
+        if (profile is null)
+        {
+            throw new Exception(); // обработать
+        }
+
+        return new UserProfileModel
+        {
+            fullName = profile.FullName,
+            email = profile.Email,
+            birthDate = profile.BirthDate,
+        };
+    } 
+    
+    public async Task<UserProfileModel> EditProfile(string userId, string fullName, DateTime birthDate)
+    {
+        if (!Guid.TryParse(userId, out var id))
+        {
+            throw new Exception(); // обработать
+        }
+
+        var profile = await _usersRepository.GetById(id);
+
+        if (profile is null)
+        {
+            throw new Exception(); // обработать
+        }
+        
+        await _usersRepository.Edit(id, fullName, birthDate);
+
+        return new UserProfileModel
+        {
+            fullName = fullName,
+            email = profile.Email,
+            birthDate = birthDate,
+        };
+    } 
 }

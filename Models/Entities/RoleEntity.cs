@@ -2,7 +2,11 @@
 
 public class RoleEntity
 {
-    public Guid Id { get; set; }
+    public int Id { get; set; }
     
-    public List<UserEntity> Users { get; set; }
+    public string Name { get; set; }
+
+    public List<PermissionEntity> Permissions { get; set; } = [];
+
+    public List<UserEntity> Users { get; set; } = [];
 }

@@ -8,14 +8,17 @@ public static class UsersEndpoints
 {
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("register", Register);
+        endpoints.MapPost("/registration", Register);
  
-        endpoints.MapPost("login", Login);
+        endpoints.MapPost("/login", Login);
+        
+        endpoints.MapGet("/profile", GetUserProfile);
+        
+        endpoints.MapPut("/profile", EditUserProfile);
         
         return endpoints;
     }
 
-    [Authorize]
     private static async Task<IResult> Register(
         UserRegisterModel request,
         UsersService usersService)
@@ -34,8 +37,43 @@ public static class UsersEndpoints
         HttpContext context)
     {
         var response = await usersService.Login(request.email, request.password);
+        
+        return Results.Ok(response);
+    }
 
-        context.Response.Cookies.Append("", response.token);
+    [Authorize]
+    private static async Task<IResult> GetUserProfile(
+        UsersService usersService,
+        HttpContext context)
+    {
+        var user = context.User.Claims.FirstOrDefault(
+            c => c.Type == "userId");;
+        
+        if (user == null || string.IsNullOrEmpty(user.Value))
+        {
+            throw new Exception();
+        }
+        
+        var response = await usersService.GetProfile(user.Value);
+        
+        return Results.Ok(response);
+    }
+    
+    [Authorize]
+    private static async Task<IResult> EditUserProfile(
+        EditUserProfileModel request,
+        UsersService usersService,
+        HttpContext context)
+    {
+        var user = context.User.Claims.FirstOrDefault(
+            c => c.Type == "userId");;
+        
+        if (user == null || string.IsNullOrEmpty(user.Value))
+        {
+            throw new Exception();
+        }
+        
+        var response = await usersService.EditProfile(user.Value, request.fullName, request.birthDate);
         
         return Results.Ok(response);
     }
