@@ -1,11 +1,14 @@
 ﻿using courses.Configurations;
+using courses.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace courses.Models.Entities;
 
-public class CoursesDbContext : DbContext
+public class CoursesDbContext(
+    DbContextOptions<CoursesDbContext> options,
+    IOptions<AuthorizationOptions> authOptions) : DbContext(options)
 {
-    public CoursesDbContext(DbContextOptions<CoursesDbContext> options) : base(options) {}
     
     public DbSet<GroupEntity> Groups { get; set; }
     public DbSet<CourseEntity> Courses { get; set; }
@@ -24,7 +27,9 @@ public class CoursesDbContext : DbContext
         modelBuilder.ApplyConfiguration(new TeacherConfiguration());
         modelBuilder.ApplyConfiguration(new StudentConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
-
+        modelBuilder.ApplyConfiguration(new PermissionConfiguration());
+        modelBuilder.ApplyConfiguration(new RolePermissionConfiguration(authOptions.Value));
+        
         base.OnModelCreating(modelBuilder);
     }
 
