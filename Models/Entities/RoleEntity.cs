@@ -2,9 +2,7 @@
 
 public class RoleEntity
 {
-    public Guid UserId { get; set; }
+    public Guid Id { get; set; }
     
-    public UserEntity User { get; set; }
-    
-    public string Name { get; set; }
+    public List<UserEntity> Users { get; set; }
 }

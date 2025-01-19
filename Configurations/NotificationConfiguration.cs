@@ -8,6 +8,8 @@ public class NotificationConfiguration : IEntityTypeConfiguration<NotificationEn
 {
     public void Configure(EntityTypeBuilder<NotificationEntity> builder)
     {
+        builder.HasKey(n => n.Id);
+        
         builder.
             HasOne(n => n.Course)
             .WithMany(c => c.Notifications);

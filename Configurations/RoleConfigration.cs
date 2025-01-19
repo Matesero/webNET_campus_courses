@@ -8,8 +8,10 @@ public class RoleConfiguration : IEntityTypeConfiguration<RoleEntity>
 {
     public void Configure(EntityTypeBuilder<RoleEntity> builder)
     {
+        builder.HasKey(r => r.Id);
+
         builder.
-            HasOne(r => r.User)
+            HasMany(r => r.Users)
             .WithMany(u => u.Roles);
     }
 }
