@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace courses.Models.Entities;
 
-public class CoursesDbContext(DbContextOptions<CoursesDbContext> options) : DbContext
+public class CoursesDbContext : DbContext
 {
+    public CoursesDbContext(DbContextOptions<CoursesDbContext> options) : base(options) {}
+    
     public DbSet<GroupEntity> Groups { get; set; }
     public DbSet<CourseEntity> Courses { get; set; }
     public DbSet<NotificationEntity> Notifications { get; set; }
