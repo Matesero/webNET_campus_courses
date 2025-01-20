@@ -8,7 +8,15 @@ namespace courses.Services;
 
 public interface IGroupsService
 {
-    
+    Task<List<CampusGroupModel>> GetAll();
+
+    Task<CampusGroupModel> Create(string name);
+
+    Task<CampusGroupModel> Edit(Guid id, string name);
+
+    Task Delete(Guid id);
+
+    Task<List<CampusCoursePreviewModel>> GetCourses(Guid id);
 }
 
 public class GroupsService : IGroupsService
@@ -88,7 +96,7 @@ public class GroupsService : IGroupsService
             id = c.Id,
             name = c.Name,
             maximumStudentsCount = c.MaximumStudentsCount,
-            remainingSlotsCount = c.RemainingStoltsCount,
+            remainingSlotsCount = c.RemainingSlotsCount,
             semester = c.Semester,
             startYear = c.StartYear,
             status = c.Status

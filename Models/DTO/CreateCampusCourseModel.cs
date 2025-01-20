@@ -12,7 +12,7 @@ public class CreateCampusCourseModel
     public int startYear { get; set; }
     
     [Required, Range(1, 200)]
-    public int maximumStidentsCount { get; set; }
+    public int maximumStudentsCount { get; set; }
     
     [Required]
     public Semesters semester { get; set; }
