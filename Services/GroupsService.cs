@@ -23,7 +23,7 @@ public class GroupsService : IGroupsService
 {
     private readonly IGroupsRepository _groupsRepository;
 
-    public GroupsService(IGroupsRepository groupsRepository)
+    public GroupsService(IGroupsRepository groupsRepository, ICoursesRepository coursesRepository)
     {
         _groupsRepository = groupsRepository;
     }
@@ -52,7 +52,7 @@ public class GroupsService : IGroupsService
 
     public async Task<CampusGroupModel> Edit(Guid id, string name)
     {
-        var group = _groupsRepository.GetById(id);
+        var group = await _groupsRepository.GetById(id);
 
         if (group is null)
         {
@@ -70,7 +70,7 @@ public class GroupsService : IGroupsService
     
     public async Task Delete(Guid id)
     {
-        var group = _groupsRepository.GetById(id);
+        var group = await _groupsRepository.GetById(id);
 
         if (group is null)
         {
@@ -82,7 +82,7 @@ public class GroupsService : IGroupsService
 
     public async Task<List<CampusCoursePreviewModel>> GetCourses(Guid id)
     {
-        var group = _groupsRepository.GetById(id);
+        var group = await _groupsRepository.GetById(id);
         
         if (group is null)
         {

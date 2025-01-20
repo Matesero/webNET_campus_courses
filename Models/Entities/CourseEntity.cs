@@ -14,7 +14,9 @@ public class CourseEntity
         string annotation,
         CourseStatuses status, 
         Semesters semester, 
-        Guid groupId)
+        Guid mainTeacherId,
+        Guid groupId,
+        DateTime createdDate)
     {
         Id = id;
         Name = name;
@@ -25,7 +27,9 @@ public class CourseEntity
         Annotation = annotation;
         Status = status;
         Semester = semester;
+        MainTeacherId = mainTeacherId;
         GroupId = groupId;
+        CreatedDate = createdDate;
     }
     
     public Guid Id { get; set; }
@@ -46,9 +50,15 @@ public class CourseEntity
     
     public Semesters Semester { get; set; }
     
+    public Guid MainTeacherId { get; set; }
+    
     public Guid GroupId { get; set; }
     
     public GroupEntity? Group { get; set; }
+    
+    public DateTime? NotificationDate { get; set; }
+    
+    public DateTime CreatedDate { get; set; }
         
     public List<TeacherEntity> Teachers { get; set; } = [];
     
@@ -64,6 +74,7 @@ public class CourseEntity
         string requirements,
         string annotation,
         Semesters semester, 
+        Guid mainTeacherId,
         Guid groupId)
     {
         return new CourseEntity(
@@ -76,6 +87,9 @@ public class CourseEntity
             annotation, 
             CourseStatuses.Created, 
             semester, 
-            groupId);
+            mainTeacherId,
+            groupId,
+            DateTime.Now);
+        ;
     }
 }
