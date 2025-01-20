@@ -2,7 +2,6 @@
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Repositories;
-using Microsoft.AspNetCore.Authorization;
 
 namespace courses.Services;
 
@@ -46,8 +45,6 @@ public class UsersService
         
         return response;
     }
-
-    [Authorize]
     public async Task<UserProfileModel> GetProfile(string userId)
     {
         if (!Guid.TryParse(userId, out var id))
@@ -92,5 +89,16 @@ public class UsersService
             email = profile.Email,
             birthDate = birthDate,
         };
+    } 
+    
+    public async Task<List<UserShortModel>> GetAll()
+    {
+        var users = await _usersRepository.GetAll();
+
+        return users.Select(u => new UserShortModel
+        {
+            id = u.Id,
+            fullName = u.FullName,
+        }).ToList();
     } 
 }

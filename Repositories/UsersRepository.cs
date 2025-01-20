@@ -15,6 +15,8 @@ public interface IUsersRepository
     Task<HashSet<Permission>> GetUserPermissions(Guid id);
 
     Task Update(Guid id, string fullName, DateTime birthDate);
+
+    Task<List<UserEntity>> GetAll();
 }
 
 public class UsersRepository : IUsersRepository
@@ -76,5 +78,14 @@ public class UsersRepository : IUsersRepository
             .SelectMany(r => r.Permissions)
             .Select(p => (Permission)p.Id)
             .ToHashSet();
+    }
+    
+    public async Task<List<UserEntity>> GetAll()
+    {
+        var users = await _context.Users
+            .AsNoTracking()
+            .ToListAsync();
+        
+        return users;
     }
 }

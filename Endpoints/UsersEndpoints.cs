@@ -8,6 +8,8 @@ public static class UsersEndpoints
 {
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("/users", GetAllUsers).WithTags("Users");
+        
         endpoints.MapPost("/registration", Register);
  
         endpoints.MapPost("/login", Login);
@@ -74,6 +76,15 @@ public static class UsersEndpoints
         }
         
         var response = await usersService.EditProfile(user.Value, request.fullName, request.birthDate);
+        
+        return Results.Ok(response);
+    }
+    
+    [Authorize]
+    private static async Task<IResult> GetAllUsers(
+        UsersService usersService)
+    {
+        var response = await usersService.GetAll();
         
         return Results.Ok(response);
     }
