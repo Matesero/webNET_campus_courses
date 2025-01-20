@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using courses.Infrastructure;
+﻿using courses.Infrastructure;
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Repositories;
@@ -37,7 +36,7 @@ public class UsersService
 
         if (result == false)
         {
-            throw new Exception();
+            throw new Exception(); // обработать
         }
 
         var response = new TokenResponse 
@@ -85,7 +84,7 @@ public class UsersService
             throw new Exception(); // обработать
         }
         
-        await _usersRepository.Edit(id, fullName, birthDate);
+        await _usersRepository.Update(id, fullName, birthDate);
 
         return new UserProfileModel
         {

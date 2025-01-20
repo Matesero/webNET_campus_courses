@@ -10,11 +10,11 @@ public interface IUsersRepository
     
     Task<UserEntity> GetByEmail(string email);
 
-    Task<UserEntity> GetById(Guid userId);
+    Task<UserEntity> GetById(Guid id);
 
-    Task<HashSet<Permission>> GetUserPermissions(Guid userId);
+    Task<HashSet<Permission>> GetUserPermissions(Guid id);
 
-    Task Edit(Guid userId, string fullName, DateTime birthDate);
+    Task Update(Guid id, string fullName, DateTime birthDate);
 }
 
 public class UsersRepository : IUsersRepository
@@ -32,10 +32,10 @@ public class UsersRepository : IUsersRepository
         await _context.SaveChangesAsync();
     }
     
-    public async Task Edit(Guid userId, string fullName, DateTime birthDate)
+    public async Task Update(Guid id, string fullName, DateTime birthDate)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId) ?? throw new Exception($"User with id {userId} does not exist");
+            .FirstOrDefaultAsync(u => u.Id == id) ?? throw new Exception($"User with id {id} does not exist");
         
         user.FullName = fullName;
         user.BirthDate = birthDate;
@@ -52,22 +52,22 @@ public class UsersRepository : IUsersRepository
         return userEntity;
     }
     
-    public async Task<UserEntity> GetById(Guid userId)
+    public async Task<UserEntity> GetById(Guid id)
     {
         var userEntity = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == userId) ?? throw new Exception($"User with id {userId} does not exist");
+            .FirstOrDefaultAsync(u => u.Id == id) ?? throw new Exception($"User with id {id} does not exist");
 
         return userEntity;
     }
 
-    public async Task<HashSet<Permission>> GetUserPermissions(Guid userId)
+    public async Task<HashSet<Permission>> GetUserPermissions(Guid id)
     {
         var roles = await _context.Users
             .AsNoTracking()
             .Include(u => u.Roles)
             .ThenInclude(r => r.Permissions)
-            .Where(u => u.Id == userId)
+            .Where(u => u.Id == id)
             .Select(u => u.Roles)
             .ToArrayAsync();
         

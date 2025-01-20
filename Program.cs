@@ -1,4 +1,3 @@
-using courses.Endpoints;
 using courses.Extensions;
 using courses.Infrastructure;
 using courses.Models.Entities;
