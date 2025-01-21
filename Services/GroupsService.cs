@@ -112,6 +112,7 @@ public class GroupsService : IGroupsService
         var mainTeachers = await _groupsRepository.GetWithDetailedCourses(semester.ToString(), groupIds);
 
         var report = mainTeachers
+            .Where(t => t.Group.Courses.Count > 0)
             .Select(t =>
             {
                 return new TeacherReportRecordModel
@@ -121,7 +122,7 @@ public class GroupsService : IGroupsService
                     campusGroupReports = new List<CampusGroupReportModel>()
                 };
             })
-            .GroupBy(r => r.id)  
+            .GroupBy(t => t.id)  
             .Select(g => g.First())
             .ToList();
         
@@ -138,30 +139,29 @@ public class GroupsService : IGroupsService
                 {
                     if (!Guid.TryParse(group.id.ToString(), out var groupId))
                     {
-                        throw new Exception();
+                        throw new Exception("Invalid Group ID");
                     }
+
+                    Console.WriteLine(mt.id);
+                    Console.WriteLine(groupId);
+
+                    var passedCounts = mainTeachers
+                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)
+                        .SelectMany(t => t.Group.Courses
+                            .Where(c => c.MainTeacherId == mt.id))
+                        .Select(c => c.Students.Count(st => st.FinalResult == "Passed"))
+                        .ToList();
+
+                    var averagePassed = passedCounts.Any() ? passedCounts.Average() : 0;
                     
-                    var averagePassed = mainTeachers
-                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)  
-                        .Select(t => t.Group) 
-                        .SelectMany(g => g.Courses)  
-                        .Select(c => new 
-                        {
-                            Course = c,
-                            PassedCount = c.Students.Count(st => st.FinalResult == "Passed")  
-                        })
-                        .Average(course => course.PassedCount);
-                    
-                    var averageFailed = mainTeachers
-                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)  
-                        .Select(t => t.Group) 
-                        .SelectMany(g => g.Courses)  
-                        .Select(c => new 
-                        {
-                            Course = c,
-                            FailedCount = c.Students.Count(st => st.FinalResult == "Failed")  
-                        })
-                        .Average(course => course.FailedCount);
+                    var failedCounts = mainTeachers
+                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)
+                        .SelectMany(t => t.Group.Courses
+                            .Where(c => c.MainTeacherId == mt.id))
+                        .Select(c => c.Students.Count(st => st.FinalResult == "Failed"))
+                        .ToList(); 
+
+                    var averageFailed = failedCounts.Any() ? failedCounts.Average() : 0;
 
                     mt.campusGroupReports.Add(new CampusGroupReportModel
                     {

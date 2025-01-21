@@ -11,6 +11,8 @@ public static class UsersEndpoints
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/users", GetAllUsers).WithTags("Users").RequirePermissions(Permission.Read); // только админ или главный чел
+
+        endpoints.MapGet("/roles", GetRoles).WithTags("Users");
         
         endpoints.MapPost("/registration", Register);
  
@@ -19,6 +21,7 @@ public static class UsersEndpoints
         endpoints.MapGet("/profile", GetUserProfile);
         
         endpoints.MapPut("/profile", EditUserProfile);
+        
         
         return endpoints;
     }
@@ -87,6 +90,24 @@ public static class UsersEndpoints
         UsersService usersService)
     {
         var response = await usersService.GetAll();
+        
+        return Results.Ok(response);
+    }
+    
+    [Authorize]
+    private static async Task<IResult> GetRoles(
+        UsersService usersService,
+        HttpContext context)
+    {
+        var user = context.User.Claims.FirstOrDefault(
+            c => c.Type == "userId");;
+        
+        if (user == null || string.IsNullOrEmpty(user.Value))
+        {
+            throw new Exception();
+        }
+        
+        var response = await usersService.GetRoles(user.Value);
         
         return Results.Ok(response);
     }

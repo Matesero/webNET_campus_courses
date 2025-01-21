@@ -107,5 +107,15 @@ public class UsersService
             id = u.Id,
             fullName = u.FullName,
         }).ToList();
-    } 
+    }
+
+    public async Task<UserRolesModel> GetRoles(string userId)
+    {
+        if (!Guid.TryParse(userId, out var id))
+        {
+            throw new Exception(); // обработать
+        }
+
+        return await _usersRepository.GetRoles(id);
+    }
 }

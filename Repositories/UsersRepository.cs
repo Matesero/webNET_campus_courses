@@ -1,4 +1,5 @@
-﻿using courses.Models.Entities;
+﻿using courses.Models.DTO;
+using courses.Models.Entities;
 using courses.Models.enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,8 @@ public interface IUsersRepository
     Task Update(Guid id, string fullName, DateTime birthDate);
 
     Task<List<UserEntity>> GetAll();
+    
+    Task<UserRolesModel> GetRoles(Guid userId);
 }
 
 public class UsersRepository : IUsersRepository
@@ -87,5 +90,32 @@ public class UsersRepository : IUsersRepository
             .ToListAsync();
         
         return users;
+    }
+
+    public async Task<UserRolesModel> GetRoles(Guid userId)
+    {
+        var isAdmin = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Include(u => u.Roles)
+            .SelectMany(u => u.Roles.Select(r => r.Id))
+            .ToListAsync();
+
+        var teacherQuery = await _context.Teachers
+            .Where(t => t.UserId == userId)
+            .Select(t => t.UserId)
+            .AnyAsync();;
+        
+        var studentQuery = await _context.Students
+            .Where(s => s.UserId == userId)
+            .Select(s => s.UserId)
+            .AnyAsync();
+
+        return new UserRolesModel
+        {
+            isAdmin = isAdmin.Contains((int)Role.Admin),
+            isTeacher = teacherQuery,
+            isStudent = studentQuery,
+        };
     }
 }
