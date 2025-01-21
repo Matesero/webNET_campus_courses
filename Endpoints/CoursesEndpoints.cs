@@ -5,6 +5,7 @@ using courses.Models.enums;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 using Microsoft.VisualBasic.CompilerServices;
 
 namespace courses.Endpoints;
@@ -13,17 +14,23 @@ public static class CoursesEndpoints
 {
     public static IEndpointRouteBuilder MapCoursesEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/couriers/{id}/details", GetCourseDetailedInfo);
+        endpoints.MapGet("/courses/{id}/details", GetCourseDetailedInfo);
         
         endpoints.MapPost("/groups/{groupId}", CreateCourse).RequirePermissions(Permission.Create);
+        
+        endpoints.MapPost("/courses/{id}/status", EditCoursesStatus).RequirePermissions(Permission.Update);
+        
+        endpoints.MapPost("/courses/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations).RequirePermissions(Permission.Update);
         
         endpoints.MapDelete("/courses/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
         
         endpoints.MapPost("/courses/{id}/notification", CreateNotification).RequirePermissions(Permission.Create);
         
-        // endpoints.MapPut("/courses/{id}", EditCourse).RequirePermissions(Permission.Update);
+        endpoints.MapPut("/courses/{id}", EditCourse).RequirePermissions(Permission.Update);
 
         endpoints.MapPost("/courses/{id}/sign-up", SignUpCourse);
+        
+        endpoints.MapPost("/courses/{id}/teacher", AddTeacherToCourse).RequirePermissions(Permission.Update);
         
         endpoints.MapGet("/courses/my", GetMyCourses);
         
@@ -155,22 +162,54 @@ public static class CoursesEndpoints
         return Results.Ok(response);
     }
 
-    // [Authorize]
-    // private static async Task<IResult> EditCourse(
-    //     Guid id,
-    //     EditCampusCourseModel request,
-    //     CoursesService coursesService)
-    // {
-    //     await coursesService.Edit(
-    //         request.name, 
-    //         request.startYear, 
-    //         request.maximumStudentsCount, 
-    //         request.semester, 
-    //         request.requirements, 
-    //         request.annotations, 
-    //         request.mainTeacherId);
-    //     ;
-    //     
-    //     return Results.Ok();
-    // }
+    [Authorize]
+    private static async Task<IResult> EditCoursesStatus(
+        CoursesService coursesService,
+        EditCourseStatusModel request,
+        Guid id)
+    {
+        var response = await coursesService.EditCoursesStatus(id, request.status);
+        
+        return Results.Ok(response);
+    }
+    
+    [Authorize]
+    private static async Task<IResult> EditCoursesRequirementsAndAnnotations(
+        CoursesService coursesService,
+        EditCampusCourseRequirementsAndAnnotationsModel request,
+        Guid id)
+    {
+        var response = await coursesService.EditCoursesRequirementsAndAnnotations(id, request.requirements, request.annotations);
+        
+        return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> AddTeacherToCourse(
+        CoursesService coursesService,
+        AddTeacherToCourseModel request,
+        Guid id)
+    {
+        var response = await coursesService.AddTeacherToCourse(id, request.userId);
+        
+        return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> EditCourse(
+        Guid id,
+        EditCampusCourseModel request,
+        CoursesService coursesService)
+    {
+        var response = await coursesService.Edit(
+            id,
+            request.name, 
+            request.startYear, 
+            request.maximumStudentsCount, 
+            request.semester, 
+            request.requirements, 
+            request.annotations);
+        
+        return Results.Ok(response);
+    }
 }

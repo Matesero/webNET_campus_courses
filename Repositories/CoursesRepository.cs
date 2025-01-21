@@ -8,7 +8,11 @@ public interface ICoursesRepository
 {
     Task Add(CourseEntity courseEntity);
 
+    Task Update(CourseEntity courseEntity);
+
     Task<CourseEntity> GetById(Guid id);
+    
+    Task<CourseEntity> GetByIdWithStudents(Guid id);
 
     Task Delete(CourseEntity courseEntity);
 
@@ -42,11 +46,26 @@ public class CoursesRepository : ICoursesRepository
         await _context.SaveChangesAsync();
     }
     
+    public async Task Update(CourseEntity courseEntity)
+    {
+        _context.Courses.Update(courseEntity);
+        await _context.SaveChangesAsync();
+    }
+    
     public async Task<CourseEntity> GetById(Guid id)
     {
         return await _context.Courses
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id);;
+    }
+    
+    public async Task<CourseEntity> GetByIdWithStudents(Guid id)
+    {
+        return await _context.Courses
+            .AsNoTracking()
+            .Include(c => c.Students
+                .Where(s => s.Status == "Accepted"))
+            .FirstOrDefaultAsync(c => c.Id == id);
     }
   
     public async Task Delete(CourseEntity courseEntity)
@@ -65,6 +84,7 @@ public class CoursesRepository : ICoursesRepository
                 student => student.CourseId,
                 course => course.Id,
                 (student, course) => course)
+            .Include(c => c.Students)
             .ToListAsync();;
     }
     
@@ -85,10 +105,21 @@ public class CoursesRepository : ICoursesRepository
     {
         return await _context.Courses
             .AsNoTracking()
-            .Include(c => c.Students)
             .Include(c => c.Teachers)
+            .ThenInclude(t => t.User)
+            .Include(c => c.Students)
+            .ThenInclude(s=> s.User)
             .Include(c => c.Notifications)
             .FirstOrDefaultAsync(c => c.Id == id);
+    }
+
+    public async Task EditStatus(Guid id, string status)
+    {
+        var course = await _context.Courses.FindAsync(id);
+        
+        course.Status = status;
+        
+        await _context.SaveChangesAsync();
     }
 
     public async Task<List<CourseEntity>> GetByFiltersAndPagination(
@@ -101,6 +132,9 @@ public class CoursesRepository : ICoursesRepository
     {
         var query = _context.Courses.AsNoTracking();
 
+        query = query
+            .Include(c => c.Students);
+
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(c => c.Name.Contains(search));
@@ -110,7 +144,7 @@ public class CoursesRepository : ICoursesRepository
         {
             query = query
                 .Where(c => c.Status == "OpenForAssigning")
-                .Where(c => c.RemainingSlotsCount > 0);
+                .Where(c => c.Students.Count < c.MaximumStudentsCount);
         }
 
         if (semester.HasValue)
