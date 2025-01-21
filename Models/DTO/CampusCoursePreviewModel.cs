@@ -14,7 +14,7 @@ public class CampusCoursePreviewModel
 
     public int remainingSlotsCount { get; set; }
     
-    public CourseStatuses status { get; set; }
+    public string status { get; set; }
     
-    public Semesters semester { get; set; }
+    public string semester { get; set; }
 }

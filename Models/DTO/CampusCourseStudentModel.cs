@@ -10,9 +10,9 @@ public class CampusCourseStudentModel
     
     public string? email { get; set; }
     
-    public StudentStatuses status { get; set; }
+    public string status { get; set; }
     
-    public StudentMarks midtermStatus  { get; set; }
+    public string midtermStatus  { get; set; }
     
-    public StudentMarks? finalResult { get; set; }
+    public string? finalResult { get; set; }
 }

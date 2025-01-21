@@ -1,6 +1,7 @@
 ﻿using courses.Models.enums;
 
 namespace courses.Models.DTO;
+using Swashbuckle.AspNetCore.Annotations;
 
 public class CampusCourseDetailsModel
 {
@@ -20,9 +21,9 @@ public class CampusCourseDetailsModel
     
     public string? annotations {get; set;}
     
-    public CourseStatuses status { get; set; }
+    public string status { get; set; }
     
-    public Semesters semester { get; set; }
+    public string semester { get; set; }
     
     public List<CampusCourseStudentModel>? students { get; set; }
     

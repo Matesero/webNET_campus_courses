@@ -12,8 +12,8 @@ public class CourseEntity
         int remainingSlotsCount,
         string requirements,
         string annotation,
-        CourseStatuses status, 
-        Semesters semester, 
+        string status, 
+        string semester, 
         Guid mainTeacherId,
         Guid groupId,
         DateTime createdDate)
@@ -46,9 +46,9 @@ public class CourseEntity
     
     public string Annotation { get; set; }
     
-    public CourseStatuses Status { get; set; } 
+    public string Status { get; set; } 
     
-    public Semesters Semester { get; set; }
+    public string Semester { get; set; }
     
     public Guid MainTeacherId { get; set; }
     
@@ -73,7 +73,7 @@ public class CourseEntity
         int maximumStudentsCount, 
         string requirements,
         string annotation,
-        Semesters semester, 
+        string semester, 
         Guid mainTeacherId,
         Guid groupId)
     {
@@ -85,11 +85,11 @@ public class CourseEntity
             maximumStudentsCount,
             requirements, 
             annotation, 
-            CourseStatuses.Created, 
+            Enum.GetName(typeof(CourseStatuses), CourseStatuses.Created), 
             semester, 
             mainTeacherId,
             groupId,
-            DateTime.Now);
+            DateTime.Now.ToUniversalTime());
         ;
     }
 }
