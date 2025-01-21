@@ -3,6 +3,7 @@ using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace courses.Endpoints;
 
@@ -19,6 +20,8 @@ public static class GroupsEndpoints
         endpoints.MapDelete("/groups/{id}", DeleteGroup).RequirePermissions(Permission.Delete);
 
         endpoints.MapGet("/groups/{id}", GetListCourses);
+        
+        endpoints.MapPost("/report", Report).RequirePermissions(Permission.Read).WithTags("Report");
         
         return endpoints;
     }
@@ -37,9 +40,9 @@ public static class GroupsEndpoints
         CreateCampusGroupModel request,
         GroupsService groupsService)
     {
-        await groupsService.Create(request.name);
+        var response = await groupsService.Create(request.name);
         
-        return Results.Ok();
+        return Results.Ok(response);
     }
     
     [Authorize]
@@ -69,6 +72,19 @@ public static class GroupsEndpoints
         GroupsService groupsService)
     {
         var response = await groupsService.GetCourses(id);
+        
+        return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> Report(
+        [FromQuery] Semesters? semester,
+        [FromQuery] Guid[]? campusGroupIds,
+        GroupsService groupsService)
+    {
+        var response = await groupsService.GetReports(semester, campusGroupIds.ToList());
+        
+        
         
         return Results.Ok(response);
     }

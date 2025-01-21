@@ -1,6 +1,7 @@
 ﻿using courses.Infrastructure;
 using courses.Models.DTO;
 using courses.Models.Entities;
+using courses.Models.enums;
 using courses.Repositories;
 using Microsoft.AspNetCore.Authorization;
 
@@ -91,15 +92,88 @@ public class GroupsService : IGroupsService
         
         var courses = await _groupsRepository.GetCourses(id);
 
-        return courses.Select(c => new CampusCoursePreviewModel
+        return courses.Select(course =>
         {
-            id = c.Id,
-            name = c.Name,
-            maximumStudentsCount = c.MaximumStudentsCount,
-            remainingSlotsCount = c.RemainingSlotsCount,
-            semester = c.Semester,
-            startYear = c.StartYear,
-            status = c.Status
+            return new CampusCoursePreviewModel
+            {
+                id = course.Id,
+                name = course.Name,
+                startYear = course.StartYear,
+                maximumStudentsCount = course.MaximumStudentsCount,
+                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count),
+                semester = course.Semester,
+                status = course.Status
+            };
         }).ToList();
+    }
+
+    public async Task<List<TeacherReportRecordModel>> GetReports(Semesters? semester, List<Guid> groupIds)
+    {
+        var mainTeachers = await _groupsRepository.GetWithDetailedCourses(semester.ToString(), groupIds);
+
+        var report = mainTeachers
+            .Select(t =>
+            {
+                return new TeacherReportRecordModel
+                {
+                    id = t.UserId,
+                    fullName = t.User.FullName,
+                    campusGroupReports = new List<CampusGroupReportModel>()
+                };
+            })
+            .GroupBy(r => r.id)  
+            .Select(g => g.First())
+            .ToList();
+        
+        report.ForEach(mt =>
+        {
+            {
+                var uniqueGroups = mainTeachers
+                    .Where(t => t.UserId == mt.id)
+                    .Select(t => new { id = t.GroupId, name = t.Group.Name })
+                    .Distinct() 
+                    .ToList();
+
+                uniqueGroups.ForEach(group =>
+                {
+                    if (!Guid.TryParse(group.id.ToString(), out var groupId))
+                    {
+                        throw new Exception();
+                    }
+                    
+                    var averagePassed = mainTeachers
+                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)  
+                        .Select(t => t.Group) 
+                        .SelectMany(g => g.Courses)  
+                        .Select(c => new 
+                        {
+                            Course = c,
+                            PassedCount = c.Students.Count(st => st.FinalResult == "Passed")  
+                        })
+                        .Average(course => course.PassedCount);
+                    
+                    var averageFailed = mainTeachers
+                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)  
+                        .Select(t => t.Group) 
+                        .SelectMany(g => g.Courses)  
+                        .Select(c => new 
+                        {
+                            Course = c,
+                            FailedCount = c.Students.Count(st => st.FinalResult == "Failed")  
+                        })
+                        .Average(course => course.FailedCount);
+
+                    mt.campusGroupReports.Add(new CampusGroupReportModel
+                    {
+                        name = group.name,
+                        id = groupId,
+                        averagePassed = averagePassed,
+                        averageFailed = averageFailed
+                    });
+                });
+            }
+        });
+        
+        return report;
     }
 }

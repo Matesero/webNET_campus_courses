@@ -1,5 +1,8 @@
-﻿using courses.Models.DTO;
+﻿using System.Collections.Specialized;
+using System.Text.RegularExpressions;
+using courses.Models.DTO;
 using courses.Models.Entities;
+using courses.Models.enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace courses.Repositories;
@@ -17,6 +20,8 @@ public interface IGroupsRepository
     Task Delete(Guid id);
 
     Task<List<CourseEntity>> GetCourses(Guid id);
+
+    Task<List<TeacherEntity>> GetWithDetailedCourses(string semester, List<Guid> groupsIds);
 }
 
 public class GroupsRepository : IGroupsRepository
@@ -82,8 +87,30 @@ public class GroupsRepository : IGroupsRepository
         var courses = await _context.Courses
             .AsNoTracking()
             .Where(c => c.GroupId == id)
+            .Include(c => c.Students
+                .Where(s => s.Status == "Accepted"))
             .ToListAsync();
         
         return courses;
+    }
+
+    public async Task<List<TeacherEntity>> GetWithDetailedCourses(string semester, List<Guid> groupsIds)
+    {
+        var query = _context.Teachers.AsNoTracking();
+
+        query = query.Where(t => t.IsMain == true);
+        
+        query = query
+            .Include(t => t.User)
+            .OrderBy(t => t.User.FullName);
+
+        query = query
+            .Include(t => t.Group)
+            .ThenInclude(g => g.Courses
+                .Where(c => string.IsNullOrWhiteSpace(semester) || c.Semester == semester))
+            .ThenInclude(g => g.Students)
+            .Where(t => groupsIds.Contains(t.Group.Id) || groupsIds.Count() == 0);
+        
+        return await query.ToListAsync();
     }
 }
