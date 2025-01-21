@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using courses.Extensions;
 using courses.Infrastructure;
 using courses.Models.Entities;
@@ -29,6 +30,12 @@ services.AddScoped<ICoursesRepository, CoursesRepository>();
 services.AddScoped<ITeachersRepository, TeachersRepository>();
 services.AddScoped<IStudentsRepository, StudentsRepository>();
 services.AddScoped<INotificationsRepository, NotificationsRepository>();
+
+services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 services.AddScoped<UsersService>();
 services.AddScoped<GroupsService>();

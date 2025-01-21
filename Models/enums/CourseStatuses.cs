@@ -5,7 +5,7 @@ namespace courses.Models.enums;
 public enum CourseStatuses
 {
     [EnumMember(Value = "Created")]
-    Created,
+    Created = 1,
     
     [EnumMember(Value = "OpenForAssigning")]
     OpenForAssigning = 2,
