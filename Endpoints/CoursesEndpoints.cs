@@ -15,6 +15,12 @@ public static class CoursesEndpoints
         endpoints.MapDelete("/courses/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
         
         // endpoints.MapPut("/courses/{id}", EditCourse).RequirePermissions(Permission.Update);
+
+        endpoints.MapPost("/courses/{id}/sign-up", SignUpCourse);
+        
+        endpoints.MapGet("/courses/my", GetMyCourses);
+        
+        endpoints.MapGet("/courses/teaching", GetTeachingCourses);
         
         return endpoints;
     }
@@ -66,7 +72,44 @@ public static class CoursesEndpoints
         
         return Results.Ok();
     }
+
+    [Authorize]
+    private static async Task<IResult> GetMyCourses(
+        CoursesService coursesService,
+        HttpContext context)
+    {
+        var userId = context.User.Claims.FirstOrDefault(
+            c => c.Type == "userId");
+        ;
+
+        if (userId == null || string.IsNullOrEmpty(userId.Value))
+        {
+            throw new Exception();
+        }
+
+        var response = await coursesService.GetMyCourses(userId.Value);
+
+        return Results.Ok(response);
+    }
     
+    [Authorize]
+    private static async Task<IResult> GetTeachingCourses(
+        CoursesService coursesService,
+        HttpContext context)
+    {
+        var userId = context.User.Claims.FirstOrDefault(
+            c => c.Type == "userId");;
+        
+        if (userId == null || string.IsNullOrEmpty(userId.Value))
+        {
+            throw new Exception();
+        }
+        
+        var response = await coursesService.GetTeachingCourses(userId.Value);
+
+        return Results.Ok(response);
+    }
+
     // [Authorize]
     // private static async Task<IResult> EditCourse(
     //     Guid id,

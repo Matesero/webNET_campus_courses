@@ -12,6 +12,10 @@ public interface ICoursesRepository
     Task<CourseEntity> GetById(Guid id);
 
     Task Delete(Guid id);
+
+    Task<List<CourseEntity>> GetByStudentId(Guid id);
+
+    Task<List<CourseEntity>> GetByTeacherId(Guid id);
 }
 
 public class CoursesRepository : ICoursesRepository
@@ -47,10 +51,34 @@ public class CoursesRepository : ICoursesRepository
         
         await _context.SaveChangesAsync();
     }
-
-    [Authorize]
-    public async Task SignUpCourse(Guid id)
+    
+    public async Task<List<CourseEntity>> GetByStudentId(Guid id)
     {
+        var courses = await _context.Students
+            .AsNoTracking()
+            .Where(s => s.UserId == id)
+            .Join(
+                _context.Courses,
+                student => student.CourseId,
+                course => course.Id,
+                (student, course) => course)
+            .ToListAsync();
         
+        return courses;
+    }
+    
+    public async Task<List<CourseEntity>> GetByTeacherId(Guid id)
+    {
+        var courses = await _context.Teachers
+            .AsNoTracking()
+            .Where(t => t.UserId == id)
+            .Join(
+                _context.Courses,
+                teacher => teacher.CourseId,
+                course => course.Id,
+                (teacher, course) => course)
+            .ToListAsync();
+        
+        return courses;
     }
 }
