@@ -18,13 +18,20 @@ public class UsersService
         _jwtProvider = jwtProvider;
     }
     
-    public async Task Register(string fullName, DateTime birthDate, string email, string password, string confirmPassword)
+    public async Task<TokenResponse> Register(string fullName, DateTime birthDate, string email, string password, string confirmPassword)
     {
         var hashedPassword = _passwordHasher.Generate(password);
         
         var user = UserEntity.Create(Guid.NewGuid(), fullName, birthDate, email, hashedPassword);
         
         await _usersRepository.Add(user);
+        
+        var response = new TokenResponse 
+        {
+            token = _jwtProvider.GenerateToken(user)
+        };
+        
+        return response;
     }
     
     public async Task<TokenResponse> Login(string email, string password)

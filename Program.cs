@@ -28,6 +28,7 @@ services.AddScoped<IGroupsRepository, GroupsRepository>();
 services.AddScoped<ICoursesRepository, CoursesRepository>();
 services.AddScoped<ITeachersRepository, TeachersRepository>();
 services.AddScoped<IStudentsRepository, StudentsRepository>();
+services.AddScoped<INotificationsRepository, NotificationsRepository>();
 
 services.AddScoped<UsersService>();
 services.AddScoped<GroupsService>();

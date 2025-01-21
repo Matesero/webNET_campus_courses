@@ -29,19 +29,23 @@ public class CoursesService : ICoursesService
     private readonly IUsersRepository _usersRepository;
     private readonly ITeachersRepository _teachersRepository;
     private readonly IStudentsRepository _studentsRepository;
+    private readonly INotificationsRepository _notificationRepository;
+
 
     public CoursesService(
         ICoursesRepository coursesRepository, 
         IGroupsRepository groupsRepository,
         IUsersRepository usersRepository,
         ITeachersRepository teachersRepository,
-        IStudentsRepository studentsRepository)
+        IStudentsRepository studentsRepository,
+        INotificationsRepository notificationRepository)
     {
         _coursesRepository = coursesRepository;
         _groupsRepository = groupsRepository;
         _usersRepository = usersRepository;
         _teachersRepository = teachersRepository;
         _studentsRepository = studentsRepository;
+        _notificationRepository = notificationRepository;
     }
 
     public async Task<CampusCoursePreviewModel> Create(
@@ -107,7 +111,7 @@ public class CoursesService : ICoursesService
             throw new Exception(); // обработать
         }
 
-        await _coursesRepository.Delete(id);
+        await _coursesRepository.Delete(course);
         
         return new CampusCoursePreviewModel
         {
@@ -184,6 +188,20 @@ public class CoursesService : ICoursesService
             status = course.Status,
             semester = course.Semester
         }).ToList();
+    }
+
+    public async Task CreateNotification(Guid courseId, string text, bool isImportant)
+    {
+        var course = await _coursesRepository.GetById(courseId);
+
+        if (course is null)
+        {
+            throw new KeyNotFoundException($"Course with id {courseId} not found");
+        }
+        
+        var notification = NotificationEntity.Create(courseId, text, isImportant);
+        
+        await _notificationRepository.Add(notification);
     }
     
     // public async Task<CampusCoursePreviewModel> Edit(

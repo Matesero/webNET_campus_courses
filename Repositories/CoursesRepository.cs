@@ -11,7 +11,7 @@ public interface ICoursesRepository
 
     Task<CourseEntity> GetById(Guid id);
 
-    Task Delete(Guid id);
+    Task Delete(CourseEntity courseEntity);
 
     Task<List<CourseEntity>> GetByStudentId(Guid id);
 
@@ -42,13 +42,9 @@ public class CoursesRepository : ICoursesRepository
         return course;
     }
   
-    public async Task Delete(Guid id)
+    public async Task Delete(CourseEntity courseEntity)
     {
-        var course = await _context.Courses
-            .FirstOrDefaultAsync(c => c.Id == id); 
-        
-        _context.Courses.Remove(course);
-        
+        _context.Courses.Remove(courseEntity);
         await _context.SaveChangesAsync();
     }
     

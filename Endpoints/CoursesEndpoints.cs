@@ -10,9 +10,13 @@ public static class CoursesEndpoints
 {
     public static IEndpointRouteBuilder MapCoursesEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        // endpoints.MapGet("/couriers/{id}/details", GetCourseDetails).RequirePermissions(Permission.Create);
+        
         endpoints.MapPost("/groups/{groupId}", CreateCourse).RequirePermissions(Permission.Create);
         
         endpoints.MapDelete("/courses/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
+        
+        endpoints.MapPost("/courses/{id}/notification", CreateNotification).RequirePermissions(Permission.Create);
         
         // endpoints.MapPut("/courses/{id}", EditCourse).RequirePermissions(Permission.Update);
 
@@ -108,6 +112,17 @@ public static class CoursesEndpoints
         var response = await coursesService.GetTeachingCourses(userId.Value);
 
         return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> CreateNotification(
+        Guid id, 
+        CampusCourseNotificationModel request,
+        CoursesService coursesService)
+    {
+        await coursesService.CreateNotification(id, request.text, request.isImportant);
+        
+        return Results.Ok();
     }
 
     // [Authorize]
