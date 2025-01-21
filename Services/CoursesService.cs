@@ -1,9 +1,7 @@
-﻿using courses.Infrastructure;
-using courses.Models.DTO;
+﻿using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
 using courses.Repositories;
-using Microsoft.AspNetCore.Authorization;
 
 namespace courses.Services;
 
@@ -202,6 +200,36 @@ public class CoursesService : ICoursesService
         var notification = NotificationEntity.Create(courseId, text, isImportant);
         
         await _notificationRepository.Add(notification);
+    }
+
+    public async Task<CourseEntity> GetDetailedInfo(Guid id)
+    {
+        var course = await _coursesRepository.GetDetailedInfoById(id);
+
+
+        return course;
+    }
+
+    public async Task<List<CampusCoursePreviewModel>> GetFilteredCourses(
+        SortList? sort,
+        string? search,
+        bool? hasPlacesAndOpen,
+        Semesters? semester,
+        int page,
+        int pageSize)
+    {
+        var courses = await _coursesRepository.GetByFiltersAndPagination(sort, search, hasPlacesAndOpen, semester, page, pageSize);
+        
+        return courses.Select(course => new CampusCoursePreviewModel
+        {
+            id = course.Id,
+            name = course.Name,
+            startYear = course.StartYear,
+            maximumStudentsCount = course.MaximumStudentsCount,
+            remainingSlotsCount = course.RemainingSlotsCount,
+            status = course.Status,
+            semester = course.Semester
+        }).ToList();
     }
     
     // public async Task<CampusCoursePreviewModel> Edit(

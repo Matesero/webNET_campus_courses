@@ -1,6 +1,5 @@
-﻿using System.Xml;
-using courses.Models.Entities;
-using Microsoft.AspNetCore.Authorization;
+﻿using courses.Models.Entities;
+using courses.Models.enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace courses.Repositories;
@@ -16,6 +15,16 @@ public interface ICoursesRepository
     Task<List<CourseEntity>> GetByStudentId(Guid id);
 
     Task<List<CourseEntity>> GetByTeacherId(Guid id);
+
+    Task<CourseEntity> GetDetailedInfoById(Guid id);
+
+    Task<List<CourseEntity>> GetByFiltersAndPagination(
+        SortList? sort,
+        string? search,
+        bool? hasPlacesAndOpen,
+        Semesters? semester,
+        int page,
+        int pageSize);
 }
 
 public class CoursesRepository : ICoursesRepository
@@ -35,11 +44,9 @@ public class CoursesRepository : ICoursesRepository
     
     public async Task<CourseEntity> GetById(Guid id)
     {
-        var course = await _context.Courses
+        return await _context.Courses
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        return course;
+            .FirstOrDefaultAsync(c => c.Id == id);;
     }
   
     public async Task Delete(CourseEntity courseEntity)
@@ -50,7 +57,7 @@ public class CoursesRepository : ICoursesRepository
     
     public async Task<List<CourseEntity>> GetByStudentId(Guid id)
     {
-        var courses = await _context.Students
+        return await _context.Students
             .AsNoTracking()
             .Where(s => s.UserId == id)
             .Join(
@@ -58,14 +65,12 @@ public class CoursesRepository : ICoursesRepository
                 student => student.CourseId,
                 course => course.Id,
                 (student, course) => course)
-            .ToListAsync();
-        
-        return courses;
+            .ToListAsync();;
     }
     
     public async Task<List<CourseEntity>> GetByTeacherId(Guid id)
     {
-        var courses = await _context.Teachers
+        return await _context.Teachers
             .AsNoTracking()
             .Where(t => t.UserId == id)
             .Join(
@@ -73,8 +78,58 @@ public class CoursesRepository : ICoursesRepository
                 teacher => teacher.CourseId,
                 course => course.Id,
                 (teacher, course) => course)
+            .ToListAsync();;
+    }
+
+    public async Task<CourseEntity> GetDetailedInfoById(Guid id)
+    {
+        return await _context.Courses
+            .AsNoTracking()
+            .Include(c => c.Students)
+            .Include(c => c.Teachers)
+            .Include(c => c.Notifications)
+            .FirstOrDefaultAsync(c => c.Id == id);
+    }
+
+    public async Task<List<CourseEntity>> GetByFiltersAndPagination(
+        SortList? sort,
+        string? search,
+        bool? hasPlacesAndOpen,
+        Semesters? semester,
+        int page,
+        int pageSize)
+    {
+        var query = _context.Courses.AsNoTracking();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(c => c.Name.Contains(search));
+        }
+
+        if (hasPlacesAndOpen.HasValue && hasPlacesAndOpen.Value)
+        {
+            query = query
+                .Where(c => c.Status == "OpenForAssigning")
+                .Where(c => c.RemainingSlotsCount > 0);
+        }
+
+        if (semester.HasValue)
+        {
+            query = semester == Semesters.Autumn? 
+                query.Where(c => c.Semester == "Autumn") : 
+                query.OrderByDescending(c => c.Semester == "Spring");
+        }
+
+        if (sort.HasValue)
+        {
+            query = sort == SortList.CreatedAsc ? 
+                query.OrderBy(c => c.CreatedDate) : 
+                query.OrderByDescending(c => c.CreatedDate);
+        }
+
+        return await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
-        
-        return courses;
     }
 }
