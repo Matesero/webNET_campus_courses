@@ -1,4 +1,5 @@
-﻿using courses.Models.enums;
+﻿using System.Text.Json.Serialization;
+using courses.Models.enums;
 
 namespace courses.Models.Entities;
 
@@ -7,9 +8,9 @@ public class StudentEntity
     private StudentEntity(
         Guid userId, 
         Guid courseId, 
-        StudentStatuses status, 
-        StudentMarks midtermResult,
-        StudentMarks finalResult)
+        string status, 
+        string midtermResult,
+        string finalResult)
     {
         UserId = userId;
         CourseId = courseId;
@@ -24,22 +25,23 @@ public class StudentEntity
     
     public Guid CourseId { get; set; }
     
+    [JsonIgnore]
     public CourseEntity Course { get; set; }
     
-    public StudentStatuses Status { get; set; }
+    public string Status { get; set; }
     
-    public StudentMarks MidtermResult { get; set; }
+    public string MidtermResult { get; set; }
     
-    public StudentMarks FinalResult { get; set; }
+    public string FinalResult { get; set; }
     
     public static StudentEntity Create(
         Guid userId, 
         Guid courseId)
     {
         return new StudentEntity(
-            userId, courseId, 
-            StudentStatuses.InQueue, 
-            StudentMarks.NotDefined, 
-            StudentMarks.NotDefined);
+            userId, courseId,
+            Enum.GetName(typeof(StudentStatuses), StudentStatuses.InQueue),
+            Enum.GetName(typeof(StudentMarks), StudentMarks.NotDefined),
+            Enum.GetName(typeof(StudentMarks), StudentMarks.NotDefined));
     }
 }

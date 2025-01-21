@@ -28,7 +28,7 @@ namespace courses.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Annotation")
+                    b.Property<string>("Annotations")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -50,9 +50,6 @@ namespace courses.Migrations
 
                     b.Property<DateTime?>("NotificationDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RemainingSlotsCount")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Requirements")
                         .IsRequired()
@@ -232,14 +229,17 @@ namespace courses.Migrations
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("FinalResult")
-                        .HasColumnType("integer");
+                    b.Property<string>("FinalResult")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int>("MidtermResult")
-                        .HasColumnType("integer");
+                    b.Property<string>("MidtermResult")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("UserId", "CourseId");
 
@@ -256,12 +256,17 @@ namespace courses.Migrations
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("GroupId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsMain")
                         .HasColumnType("boolean");
 
                     b.HasKey("UserId", "CourseId");
 
                     b.HasIndex("CourseId");
+
+                    b.HasIndex("GroupId");
 
                     b.ToTable("Teachers");
                 });
@@ -371,6 +376,10 @@ namespace courses.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("courses.Models.Entities.GroupEntity", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId");
+
                     b.HasOne("courses.Models.Entities.UserEntity", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -378,6 +387,8 @@ namespace courses.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+
+                    b.Navigation("Group");
 
                     b.Navigation("User");
                 });

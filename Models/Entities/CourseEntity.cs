@@ -1,4 +1,5 @@
 ﻿using courses.Models.enums;
+using System.Text.Json.Serialization;
 
 namespace courses.Models.Entities;
 
@@ -9,9 +10,8 @@ public class CourseEntity
         string name, 
         int startYear, 
         int maximumStudentsCount,
-        int remainingSlotsCount,
         string requirements,
-        string annotation,
+        string annotations,
         string status, 
         string semester, 
         Guid mainTeacherId,
@@ -22,9 +22,8 @@ public class CourseEntity
         Name = name;
         StartYear = startYear;
         MaximumStudentsCount = maximumStudentsCount;
-        RemainingSlotsCount = remainingSlotsCount;
         Requirements = requirements;
-        Annotation = annotation;
+        Annotations = annotations;
         Status = status;
         Semester = semester;
         MainTeacherId = mainTeacherId;
@@ -39,12 +38,10 @@ public class CourseEntity
     public int StartYear { get; set; }
     
     public int MaximumStudentsCount { get; set; }
-
-    public int RemainingSlotsCount { get; set; }
     
     public string Requirements { get; set; }
     
-    public string Annotation { get; set; }
+    public string Annotations { get; set; }
     
     public string Status { get; set; } 
     
@@ -54,7 +51,8 @@ public class CourseEntity
     
     public Guid GroupId { get; set; }
     
-    public GroupEntity? Group { get; set; }
+    [JsonIgnore]
+    public GroupEntity Group { get; set; }
     
     public DateTime? NotificationDate { get; set; }
     
@@ -72,7 +70,7 @@ public class CourseEntity
         int startYear, 
         int maximumStudentsCount, 
         string requirements,
-        string annotation,
+        string annotations,
         string semester, 
         Guid mainTeacherId,
         Guid groupId)
@@ -82,14 +80,12 @@ public class CourseEntity
             name, 
             startYear, 
             maximumStudentsCount, 
-            maximumStudentsCount,
             requirements, 
-            annotation, 
+            annotations, 
             Enum.GetName(typeof(CourseStatuses), CourseStatuses.Created), 
             semester, 
             mainTeacherId,
             groupId,
             DateTime.Now.ToUniversalTime());
-        ;
     }
 }

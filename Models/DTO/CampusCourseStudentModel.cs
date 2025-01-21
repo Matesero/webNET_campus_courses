@@ -12,7 +12,7 @@ public class CampusCourseStudentModel
     
     public string status { get; set; }
     
-    public string midtermStatus  { get; set; }
+    public string midtermResult  { get; set; }
     
     public string? finalResult { get; set; }
 }

@@ -14,5 +14,10 @@ public class TeacherConfiguration : IEntityTypeConfiguration<TeacherEntity>
             HasOne(s => s.Course)
             .WithMany(c => c.Teachers)
             .HasForeignKey(s => s.CourseId);
+        
+        builder
+            .HasOne(s => s.Group)
+            .WithMany()
+            .HasForeignKey(s => s.GroupId);
     }
 }

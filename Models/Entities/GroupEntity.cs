@@ -11,9 +11,8 @@ public class GroupEntity
     public Guid Id { get; set; }
     
     public string Name { get; set; }
-
-    public List<CourseEntity> Courses { get; set; } = [];
     
+    public List<CourseEntity> Courses { get; set; } = [];
     
     public static GroupEntity Create(Guid id, string name)
     {

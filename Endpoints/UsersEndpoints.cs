@@ -1,4 +1,6 @@
-﻿using courses.Models.DTO;
+﻿using courses.Extensions;
+using courses.Models.DTO;
+using courses.Models.enums;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -8,7 +10,7 @@ public static class UsersEndpoints
 {
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/users", GetAllUsers).WithTags("Users");
+        endpoints.MapGet("/users", GetAllUsers).WithTags("Users").RequirePermissions(Permission.Read); // только админ или главный чел
         
         endpoints.MapPost("/registration", Register);
  
@@ -25,13 +27,13 @@ public static class UsersEndpoints
         UserRegisterModel request,
         UsersService usersService)
     {
-        await usersService.Register(request.fullName,
+        var response =  await usersService.Register(request.fullName,
             request.birthDate,
             request.email,
             request.password,
             request.confirmPassword);
 
-        return Results.Ok();
+        return Results.Ok(response);
     }
     private static async Task<IResult> Login(
         UserLoginModel request, 

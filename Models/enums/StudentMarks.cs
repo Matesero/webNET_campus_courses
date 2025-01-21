@@ -3,6 +3,6 @@
 public enum StudentMarks
 {
     NotDefined,
-    Passes,
+    Passed,
     Failed
 }

@@ -22,7 +22,4 @@ public class EditCampusCourseModel
     
     [Required]
     public string annotations { get; set; }
-    
-    [Required]
-    public Guid mainTeacherId { get; set; }
 }

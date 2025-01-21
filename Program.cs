@@ -35,6 +35,7 @@ services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
     });
 
 services.AddScoped<UsersService>();

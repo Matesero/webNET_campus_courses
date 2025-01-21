@@ -12,7 +12,8 @@ public class CourseConfiguration : IEntityTypeConfiguration<CourseEntity>
 
         builder.
             HasOne(c => c.Group)
-            .WithMany(c => c.Courses);
+            .WithMany(c => c.Courses)
+            .HasForeignKey(t => t.GroupId);
 
         builder.
             HasMany(c => c.Teachers)

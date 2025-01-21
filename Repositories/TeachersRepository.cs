@@ -1,6 +1,4 @@
-﻿using courses.Models.DTO;
-using courses.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using courses.Models.Entities;
 
 namespace courses.Repositories;
 
