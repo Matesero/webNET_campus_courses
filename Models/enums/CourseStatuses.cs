@@ -1,9 +1,18 @@
-﻿namespace courses.Models.enums;
+﻿using System.Runtime.Serialization;
+
+namespace courses.Models.enums;
 
 public enum CourseStatuses
 {
+    [EnumMember(Value = "Created")]
     Created,
-    OpenForAssigning,
-    Started,
-    Finished
+    
+    [EnumMember(Value = "OpenForAssigning")]
+    OpenForAssigning = 2,
+    
+    [EnumMember(Value = "Started")]
+    Started = 3,
+    
+    [EnumMember(Value = "Finished")]
+    Finished = 4
 }

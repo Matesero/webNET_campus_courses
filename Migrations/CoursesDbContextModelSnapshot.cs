@@ -32,7 +32,13 @@ namespace courses.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MainTeacherId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("MaximumStudentsCount")
@@ -42,6 +48,9 @@ namespace courses.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("NotificationDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("RemainingSlotsCount")
                         .HasColumnType("integer");
 
@@ -49,14 +58,16 @@ namespace courses.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("Semester")
-                        .HasColumnType("integer");
+                    b.Property<string>("Semester")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("StartYear")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

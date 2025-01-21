@@ -6,8 +6,8 @@ namespace courses.Models.DTO;
 public class EditCourseStudentMarkModel
 {
     [Required]
-    public MarkType markType { get; set; }
+    public string markType { get; set; }
     
     [Required]
-    public StudentMarks mark { get; set; }
+    public string mark { get; set; }
 }

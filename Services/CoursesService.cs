@@ -14,7 +14,7 @@ public interface ICoursesService
         string name,
         int startYear,
         int maximumStudentsCount,
-        Semesters semester,
+        string semester,
         string requirements,
         string annotations,
         Guid mainTeacherId);
@@ -49,7 +49,7 @@ public class CoursesService : ICoursesService
         string name, 
         int startYear,
         int maximumStudentsCount, 
-        Semesters semester, 
+        string semester, 
         string requirements, 
         string annotations, 
         Guid mainTeacherId)
@@ -90,11 +90,11 @@ public class CoursesService : ICoursesService
         return new CampusCoursePreviewModel
         {
             id = courseId,
-            name = name,
-            startYear = startYear,
-            maximumStudentsCount = maximumStudentsCount,
-            semester = semester,
-            status = CourseStatuses.Created
+            name = course.Name,
+            startYear = course.StartYear,
+            maximumStudentsCount = course.MaximumStudentsCount,
+            semester = course.Semester,
+            status = course.Status
         };
     }
     
@@ -142,6 +142,48 @@ public class CoursesService : ICoursesService
         var student = StudentEntity.Create(userId, courseId);
         
         await _studentsRepository.Add(student);
+    }
+
+    public async Task<List<CampusCoursePreviewModel>> GetMyCourses(string id)
+    {
+        if (!Guid.TryParse(id, out var userId))
+        {
+            throw new Exception();
+        }
+        
+        var courses = await _coursesRepository.GetByStudentId(userId);
+        
+        return courses.Select(course => new CampusCoursePreviewModel
+        {
+            id = course.Id,
+            name = course.Name,
+            startYear = course.StartYear,
+            maximumStudentsCount = course.MaximumStudentsCount,
+            remainingSlotsCount = course.RemainingSlotsCount,
+            status = course.Status,
+            semester = course.Semester
+        }).ToList();
+    }
+    
+    public async Task<List<CampusCoursePreviewModel>> GetTeachingCourses(string id)
+    {
+        if (!Guid.TryParse(id, out var userId))
+        {
+            throw new Exception();
+        }
+        
+        var courses = await _coursesRepository.GetByTeacherId(userId);
+        
+        return courses.Select(course => new CampusCoursePreviewModel
+        {
+            id = course.Id,
+            name = course.Name,
+            startYear = course.StartYear,
+            maximumStudentsCount = course.MaximumStudentsCount,
+            remainingSlotsCount = course.RemainingSlotsCount,
+            status = course.Status,
+            semester = course.Semester
+        }).ToList();
     }
     
     // public async Task<CampusCoursePreviewModel> Edit(

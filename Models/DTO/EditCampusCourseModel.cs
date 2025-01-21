@@ -15,7 +15,7 @@ public class EditCampusCourseModel
     public int maximumStudentsCount { get; set; }
     
     [Required]
-    public Semesters semester { get; set; }
+    public string semester { get; set; }
     
     [Required]
     public string requirements { get; set; }

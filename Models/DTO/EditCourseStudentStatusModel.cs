@@ -6,5 +6,5 @@ namespace courses.Models.DTO;
 public class EditCourseStudentStatusModel
 {
     [Required]
-    public StudentStatuses status { get; set; }
+    public string status { get; set; }
 }

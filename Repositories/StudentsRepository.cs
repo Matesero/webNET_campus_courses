@@ -27,7 +27,7 @@ public class StudentsRepository : IStudentsRepository
         }
         catch (DbUpdateException e)
         {
-            if (e.InnerException != null && e.InnerException.Message.Contains("duplicate key value violates unique constraint"))
+            if (e.InnerException != null && e.InnerException.Message.Contains("повторяющееся значение ключа"))
             {
                 throw new InvalidOperationException("This user is already assigned to the course");
             }
