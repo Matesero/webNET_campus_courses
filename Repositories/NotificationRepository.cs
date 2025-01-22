@@ -22,6 +22,5 @@ public class NotificationsRepository : INotificationsRepository
     {
         await _context.Notifications.AddAsync(notificationEntity);
         await _context.SaveChangesAsync();
-        
     }
 }

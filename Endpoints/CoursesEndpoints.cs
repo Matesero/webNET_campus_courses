@@ -17,21 +17,28 @@ public static class CoursesEndpoints
         
         courses.MapGet("/{id}/details", GetCourseDetailedInfo);
         
-        endpoints.MapPost("/groups/{groupId}", CreateCourse).RequirePermissions(Permission.Create);
+        endpoints.MapPost("/groups/{groupId}", CreateCourse)
+            .RequirePermissions(Permission.Create);
         
-        courses.MapPost("/{id}/status", EditCoursesStatus).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/status", EditCoursesStatus)
+            .RequirePermissions(Permission.Update);
         
-        courses.MapPost("/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations)
+            .RequirePermissions(Permission.Update);
         
-        courses.MapDelete("/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
+        courses.MapDelete("/{id}", DeleteCourse)
+            .RequirePermissions(Permission.Delete);
         
-        courses.MapPost("/{id}/notification", CreateNotification).RequirePermissions(Permission.Create);
+        courses.MapPost("/{id}/notification", CreateNotification)
+            .RequirePermissions(Permission.Create);
         
-        courses.MapPut("/{id}", EditCourse).RequirePermissions(Permission.Update);
+        courses.MapPut("/{id}", EditCourse)
+            .RequirePermissions(Permission.Update);
 
         courses.MapPost("/{id}/sign-up", SignUpCourse);
         
-        courses.MapPost("/{id}/teacher", AddTeacherToCourse).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/teacher", AddTeacherToCourse)
+            .RequirePermissions(Permission.Update);
         
         courses.MapGet("/my", GetMyCourses);
         
@@ -39,9 +46,11 @@ public static class CoursesEndpoints
         
         courses.MapGet("/list", GetFilteredCourses);
         
-        courses.MapPost("/{id}/student-status/{studentId}", ChangeStudentStatus).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/student-status/{studentId}", ChangeStudentStatus)
+            .RequirePermissions(Permission.Update);
         
-        courses.MapPost("/{id}/marks/{studentId}", ChangeStudentMark).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/marks/{studentId}", ChangeStudentMark)
+            .RequirePermissions(Permission.Update);
         
         return endpoints;
     }
@@ -78,9 +87,9 @@ public static class CoursesEndpoints
         Guid id,
         CoursesService coursesService)
     {
-        var response = await coursesService.Delete(id);
+        await coursesService.Delete(id);
         
-        return Results.Ok(response);
+        return Results.Ok();
     }
     
     [Authorize]
@@ -142,8 +151,16 @@ public static class CoursesEndpoints
     private static async Task<IResult> CreateNotification(
         Guid id, 
         CampusCourseNotificationModel request,
+        IValidator<CampusCourseNotificationModel> validator,
         CoursesService coursesService)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
         await coursesService.CreateNotification(id, request.text, request.isImportant);
         
         return Results.Ok();
@@ -202,8 +219,16 @@ public static class CoursesEndpoints
     private static async Task<IResult> EditCoursesStatus(
         CoursesService coursesService,
         EditCourseStatusModel request,
+        IValidator<EditCourseStatusModel> validator,
         Guid id)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
         var response = await coursesService.EditCoursesStatus(id, request.status);
         
         return Results.Ok(response);
@@ -213,9 +238,20 @@ public static class CoursesEndpoints
     private static async Task<IResult> EditCoursesRequirementsAndAnnotations(
         CoursesService coursesService,
         EditCampusCourseRequirementsAndAnnotationsModel request,
+        IValidator<EditCampusCourseRequirementsAndAnnotationsModel> validator,
         Guid id)
     {
-        var response = await coursesService.EditCoursesRequirementsAndAnnotations(id, request.requirements, request.annotations);
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
+        var response = await coursesService.EditCoursesRequirementsAndAnnotations(
+            id, 
+            request.requirements, 
+            request.annotations);
         
         return Results.Ok(response);
     }
@@ -252,11 +288,15 @@ public static class CoursesEndpoints
     [Authorize]
     private static async Task<IResult> ChangeStudentStatus(
         [FromBody] EditCourseStudentStatusModel request,
+        IValidator<EditCourseStudentStatusModel> validator,
         CoursesService coursesService,
         [FromQuery] Guid studentId,
         [FromQuery] Guid id)
     {
-        var response = await coursesService.ChangeStudentStatus(id, studentId, request.status);
+        var response = await coursesService.ChangeStudentStatus(
+            id, 
+            studentId, 
+            request.status);
         
         return Results.Ok(response);
     }

@@ -1,4 +1,5 @@
-﻿using courses.Models.Entities;
+﻿using courses.Middleware;
+using courses.Models.Entities;
 using courses.Models.enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,9 +13,11 @@ public interface ICoursesRepository
 
     Task<CourseEntity> GetById(Guid id);
     
-    Task<CourseEntity> GetByIdWithStudents(Guid id);
+    Task CheckExistence(Guid id);
+    
+    Task<CourseEntity> GetByIdWithStudentsAndTeachers(Guid id);
 
-    Task Delete(CourseEntity courseEntity);
+    Task Delete(Guid id);
 
     Task<List<CourseEntity>> GetByStudentId(Guid id);
 
@@ -59,18 +62,23 @@ public class CoursesRepository : ICoursesRepository
             .FirstOrDefaultAsync(c => c.Id == id);;
     }
     
-    public async Task<CourseEntity> GetByIdWithStudents(Guid id)
+    public async Task<CourseEntity> GetByIdWithStudentsAndTeachers(Guid id)
     {
         return await _context.Courses
             .AsNoTracking()
-            .Include(c => c.Students
-                .Where(s => s.Status == "Accepted"))
+            .Include(c => c.Students)
+            .Include(c => c.Teachers)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
   
-    public async Task Delete(CourseEntity courseEntity)
+    public async Task Delete(Guid id)
     {
-        _context.Courses.Remove(courseEntity);
+        var course = await _context.Courses
+                        .FirstOrDefaultAsync(g => g.Id == id) ?? 
+                    throw new NotFoundException(id.ToString(), "Course", "ID");
+            
+        _context.Courses.Remove(course);
+        
         await _context.SaveChangesAsync();
     }
     
@@ -110,16 +118,21 @@ public class CoursesRepository : ICoursesRepository
             .Include(c => c.Students)
             .ThenInclude(s=> s.User)
             .Include(c => c.Notifications)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id) ?? 
+               throw new NotFoundException(id.ToString(), "Course", "ID");
     }
-
-    public async Task EditStatus(Guid id, string status)
+    
+    public async Task CheckExistence(Guid id)
     {
-        var course = await _context.Courses.FindAsync(id);
-        
-        course.Status = status;
-        
-        await _context.SaveChangesAsync();
+        var course = await _context.Groups
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (course is null)
+        { 
+            throw new NotFoundException(id.ToString(), "Course", "ID");
+        }
     }
 
     public async Task<List<CourseEntity>> GetByFiltersAndPagination(

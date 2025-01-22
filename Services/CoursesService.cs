@@ -1,4 +1,5 @@
-﻿using courses.Models.DTO;
+﻿using courses.Middleware;
+using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
 using courses.Repositories;
@@ -18,7 +19,7 @@ public interface ICoursesService
         string annotations,
         Guid mainTeacherId);
 
-    Task<CampusCoursePreviewModel> Delete(Guid id);
+    Task Delete(Guid id);
 }
 
 public class CoursesService : ICoursesService
@@ -85,18 +86,9 @@ public class CoursesService : ICoursesService
         return ConvertEntityToPreviewModel(course);
     }
     
-    public async Task<CampusCoursePreviewModel> Delete(Guid id)
+    public async Task Delete(Guid id)
     {
-        var course = await _coursesRepository.GetByIdWithStudents(id);
-
-        if (course is null)
-        {
-            throw new Exception(); // обработать
-        }
-
-        await _coursesRepository.Delete(course);
-        
-        return ConvertEntityToPreviewModel(course);
+        await _coursesRepository.Delete(id);
     }
 
     public async Task SignUp(string id, Guid courseId)
@@ -106,21 +98,34 @@ public class CoursesService : ICoursesService
             throw new Exception(); // обработать
         }
         
-        var course = await _coursesRepository.GetByIdWithStudents(courseId);
+        var courseEntity = await _coursesRepository.GetByIdWithStudentsAndTeachers(courseId);
 
-        if (course is null)
-        {
-            throw new KeyNotFoundException($"Course with id {courseId} not found"); // Обработать
-        }
-
-        if (course.MaximumStudentsCount - course.Students.Count <= 0)
+        if (courseEntity.Status != Enum.GetName(CourseStatuses.OpenForAssigning))
         {
             throw new KeyNotFoundException($"Course requires at least 1 slot"); // Обработать
         }
 
-        var student = StudentEntity.Create(userId, courseId);
+        var remainingSlots = courseEntity.MaximumStudentsCount - 
+                             courseEntity.Students.Count(student => student.Status == "Accepted");
         
-        await _studentsRepository.Add(student);
+        if (remainingSlots <= 0 )
+        {
+            throw new KeyNotFoundException($"Course requires at least 1 slot"); // Обработать
+        }
+        
+        if (courseEntity.Students.Any(student => student.UserId.ToString() == id))
+        {
+            throw new KeyNotFoundException($"Course requires at least 1 slot");
+        }
+        
+        if (courseEntity.Teachers.Any(teacher => teacher.UserId.ToString() == id))
+        {
+            throw new KeyNotFoundException($"Course requires at least 1 slot");
+        }
+
+        var studentEntity = StudentEntity.Create(userId, courseId);
+        
+        await _studentsRepository.Add(studentEntity);
     }
 
     public async Task<List<CampusCoursePreviewModel>> GetMyCourses(string id)
@@ -132,61 +137,35 @@ public class CoursesService : ICoursesService
         
         var courses = await _coursesRepository.GetByStudentId(userId);
         
-        return courses.Select(course => new CampusCoursePreviewModel
-            {
-                id = course.Id,
-                name = course.Name,
-                startYear = course.StartYear,
-                maximumStudentsCount = course.MaximumStudentsCount,
-                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count(student => student.Status == "Accepted")),
-                semester = course.Semester,
-                status = course.Status
-        }).ToList();
+        return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
     
     public async Task<List<CampusCoursePreviewModel>> GetTeachingCourses(string id)
     {
         if (!Guid.TryParse(id, out var userId))
         {
-            throw new Exception();
+            throw new Exception(); // обработать
         }
         
         var courses = await _coursesRepository.GetByTeacherId(userId);
         
-        return courses.Select(course => new CampusCoursePreviewModel
-        {
-                id = course.Id,
-                name = course.Name,
-                startYear = course.StartYear,
-                maximumStudentsCount = course.MaximumStudentsCount,
-                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - 
-                                                  course.Students.Count(student => student.Status == "Accepted")),
-                semester = course.Semester,
-                status = course.Status
-        }).ToList();
+        return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
     public async Task CreateNotification(Guid courseId, string text, bool isImportant)
     {
-        var course = await _coursesRepository.GetById(courseId);
+        await _coursesRepository.CheckExistence(courseId);
 
-        if (course is null)
-        {
-            throw new KeyNotFoundException($"Course with id {courseId} not found");
-        }
+        var notificationEntity = NotificationEntity.Create(courseId, text, isImportant);
         
-        var notification = NotificationEntity.Create(courseId, text, isImportant);
-        
-        await _notificationRepository.Add(notification);
+        await _notificationRepository.Add(notificationEntity);
     }
 
     public async Task<CampusCourseDetailsModel> GetDetailedInfo(Guid id)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
-        
-        var course = ConvertEntityToDetailedModel(courseEntity);
 
-        return course;
+        return ConvertEntityToDetailedModel(courseEntity);
     }
 
     public async Task<List<CampusCoursePreviewModel>> GetFilteredCourses(
@@ -209,37 +188,22 @@ public class CoursesService : ICoursesService
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
-    public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, string status)
+    public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, CourseStatuses status)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
-
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {id} not found");
-        }
         
-        if (Enum.TryParse<CourseStatuses>(status, out var requestStatus))
+        if (!Enum.TryParse<CourseStatuses>(courseEntity.Status, out var dbStatus))
         {
-            if (!Enum.TryParse<CourseStatuses>(courseEntity.Status, out var dbStatus))
-            {
-                courseEntity.Status = requestStatus.ToString();
-            }
-            else
-            {
-                if ((int)dbStatus < (int)requestStatus)
-                {
-                    courseEntity.Status = requestStatus.ToString();
-                }
-                else
-                {
-                    throw new Exception(); // обработать
-                }
-            }
+            courseEntity.Status = status.ToString();
         }
-        else
+         else if ((int)dbStatus < (int)status)
         {
-            throw new Exception(); // обработать
+            courseEntity.Status = status.ToString();
         }
+         else
+         {
+             throw new Exception(); // обработать
+         }
         
         await _coursesRepository.Update(courseEntity);
         
@@ -252,11 +216,6 @@ public class CoursesService : ICoursesService
         string annotations)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
-
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {id} not found");
-        }
         
         courseEntity.Requirements = requirements;
         courseEntity.Annotations = annotations;
@@ -406,17 +365,12 @@ public class CoursesService : ICoursesService
     public async Task<CampusCourseDetailsModel> ChangeStudentStatus(Guid courseId, Guid studentId, string status)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
-
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {courseId} not found");
-        }
         
         var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
 
         if (student is null)
         {
-            throw new KeyNotFoundException($"Student with id {studentId} not found");
+            throw new NotFoundException(studentId.ToString(),"Student", "ID");
         }
 
         if (student.Status != Enum.GetName(StudentStatuses.InQueue))
