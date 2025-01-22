@@ -13,6 +13,7 @@ public class StudentConfiguration : IEntityTypeConfiguration<StudentEntity>
         builder.
             HasOne(s => s.Course)
             .WithMany(c => c.Students)
-            .HasForeignKey(s => s.CourseId);
+            .HasForeignKey(s => s.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

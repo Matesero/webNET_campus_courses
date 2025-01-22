@@ -12,6 +12,7 @@ public class NotificationConfiguration : IEntityTypeConfiguration<NotificationEn
         
         builder.
             HasOne(n => n.Course)
-            .WithMany(c => c.Notifications);
+            .WithMany(c => c.Notifications)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

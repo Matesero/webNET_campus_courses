@@ -41,7 +41,6 @@ public class GroupsService : IGroupsService
         var id = Guid.NewGuid();
         
         var group = GroupEntity.Create(id, name);
-
         await _groupsRepository.Add(group);
         
         return new CampusGroupModel
@@ -55,12 +54,8 @@ public class GroupsService : IGroupsService
     {
         var group = await _groupsRepository.GetById(id);
 
-        if (group is null)
-        {
-            throw new Exception(); // обработать
-        }
-
-        await _groupsRepository.Update(id, name);
+        group.Name = name;
+        await _groupsRepository.Update(group);
 
         return new CampusGroupModel
         {
@@ -71,24 +66,12 @@ public class GroupsService : IGroupsService
     
     public async Task Delete(Guid id)
     {
-        var group = await _groupsRepository.GetById(id);
-
-        if (group is null)
-        {
-            throw new Exception(); // обработать
-        }
-
         await _groupsRepository.Delete(id);
     }
 
     public async Task<List<CampusCoursePreviewModel>> GetCourses(Guid id)
     {
-        var group = await _groupsRepository.GetById(id);
-        
-        if (group is null)
-        {
-            throw new Exception(); // обработать
-        }
+        await _groupsRepository.CheckExistence(id);
         
         var courses = await _groupsRepository.GetCourses(id);
 
@@ -100,7 +83,8 @@ public class GroupsService : IGroupsService
                 name = course.Name,
                 startYear = course.StartYear,
                 maximumStudentsCount = course.MaximumStudentsCount,
-                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count),
+                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count(student => 
+                    student.Status == Enum.GetName(StudentStatuses.Accepted))),
                 semester = course.Semester,
                 status = course.Status
             };
@@ -141,23 +125,19 @@ public class GroupsService : IGroupsService
                     {
                         throw new Exception("Invalid Group ID");
                     }
-
-                    Console.WriteLine(mt.id);
-                    Console.WriteLine(groupId);
-
-                    var passedCounts = mainTeachers
+                    
+                    var courses = mainTeachers
                         .Where(t => t.GroupId == groupId && t.UserId == mt.id)
                         .SelectMany(t => t.Group.Courses
-                            .Where(c => c.MainTeacherId == mt.id))
+                            .Where(c => c.MainTeacherId == mt.id));
+                    
+                    var passedCounts = courses
                         .Select(c => c.Students.Count(st => st.FinalResult == "Passed"))
                         .ToList();
 
                     var averagePassed = passedCounts.Any() ? passedCounts.Average() : 0;
                     
-                    var failedCounts = mainTeachers
-                        .Where(t => t.GroupId == groupId && t.UserId == mt.id)
-                        .SelectMany(t => t.Group.Courses
-                            .Where(c => c.MainTeacherId == mt.id))
+                    var failedCounts = courses
                         .Select(c => c.Students.Count(st => st.FinalResult == "Failed"))
                         .ToList(); 
 

@@ -22,6 +22,24 @@ namespace courses.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("courses.Models.Entities.BlackTokenEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpirationDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BlackTokens");
+                });
+
             modelBuilder.Entity("courses.Models.Entities.CourseEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -378,7 +396,8 @@ namespace courses.Migrations
 
                     b.HasOne("courses.Models.Entities.GroupEntity", "Group")
                         .WithMany()
-                        .HasForeignKey("GroupId");
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("courses.Models.Entities.UserEntity", "User")
                         .WithMany()

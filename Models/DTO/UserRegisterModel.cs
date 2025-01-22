@@ -13,9 +13,9 @@ public class UserRegisterModel
     [Required, EmailAddress, MinLength(1)]
     public string email { get; set; }
     
-    [Required, MinLength(6), MaxLength(36)]
+    [Required, MinLength(6), MaxLength(32)]
     public string password { get; set; }
     
-    [Required, MinLength(6), MaxLength(36)]
+    [Required, MinLength(6), MaxLength(32)]
     public string confirmPassword { get; set; }
 }

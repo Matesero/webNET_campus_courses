@@ -9,7 +9,6 @@ public class CoursesDbContext(
     DbContextOptions<CoursesDbContext> options,
     IOptions<AuthorizationOptions> authOptions) : DbContext(options)
 {
-    
     public DbSet<GroupEntity> Groups { get; set; }
     public DbSet<CourseEntity> Courses { get; set; }
     public DbSet<NotificationEntity> Notifications { get; set; }
@@ -17,6 +16,7 @@ public class CoursesDbContext(
     public DbSet<TeacherEntity> Teachers { get; set; }
     public DbSet<StudentEntity> Students { get; set; }
     public DbSet<RoleEntity> Roles { get; set; }
+    public DbSet<BlackTokenEntity> BlackTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+﻿using System.Net;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -24,8 +24,6 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
         {
             return;
         }
-        
-        // Добавить проверку на блэклист
         
         using var scope = _serviceScopeFactory.CreateScope();
         

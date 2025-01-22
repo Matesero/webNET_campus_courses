@@ -24,7 +24,6 @@ public static class ApiExtensions
         IConfiguration configuration)
     {
         var jwtOptions = configuration.GetSection("JwtOptions").Get<JwtOptions>();
-
         
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
