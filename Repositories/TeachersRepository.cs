@@ -1,4 +1,5 @@
 ﻿using courses.Models.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace courses.Repositories;
 
@@ -19,6 +20,14 @@ public class TeachersRepository : ITeachersRepository
     public async Task Add(TeacherEntity teacherEntity)
     {
         await _context.Teachers.AddAsync(teacherEntity);
+        await _context.SaveChangesAsync();
+    }
+    
+    public async Task GetByCourseAndUserIds(Guid courseId, Guid userId)
+    {
+        await _context.Teachers.AsNoTracking()
+            .Where(t => t.CourseId == courseId && t.UserId == userId)
+            .FirstOrDefaultAsync();
         await _context.SaveChangesAsync();
     }
 }

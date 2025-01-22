@@ -57,19 +57,8 @@ public class CoursesService : ICoursesService
         string annotations, 
         Guid mainTeacherId)
     {
-        var group = await _groupsRepository.GetById(groupId);
-
-        if (group is null)
-        {
-            throw new KeyNotFoundException($"Group with id {groupId} not found"); // обработать
-        }
-        
-        var teacher = await _usersRepository.GetById(mainTeacherId);
-        
-        if (teacher is null)
-        {
-            throw new KeyNotFoundException($"User with id {mainTeacherId} not found"); // обработать
-        }
+        await _groupsRepository.CheckExistence(groupId);
+        await _usersRepository.CheckExistence(mainTeacherId);
         
         var courseId = Guid.NewGuid();
         
@@ -84,21 +73,16 @@ public class CoursesService : ICoursesService
             mainTeacherId,
             groupId);
 
-        var mainTeacher = TeacherEntity.Create(mainTeacherId, courseId, true, groupId);
+        var mainTeacher = TeacherEntity.Create(
+            mainTeacherId, 
+            courseId, 
+            true, 
+            groupId);
 
         await _coursesRepository.Add(course);
-        
         await _teachersRepository.Add(mainTeacher);
-        
-        return new CampusCoursePreviewModel
-        {
-            id = courseId,
-            name = course.Name,
-            startYear = course.StartYear,
-            maximumStudentsCount = course.MaximumStudentsCount,
-            semester = course.Semester,
-            status = course.Status
-        };
+
+        return ConvertEntityToPreviewModel(course);
     }
     
     public async Task<CampusCoursePreviewModel> Delete(Guid id)
@@ -112,15 +96,7 @@ public class CoursesService : ICoursesService
 
         await _coursesRepository.Delete(course);
         
-        return new CampusCoursePreviewModel
-        {
-            id = course.Id,
-            name = course.Name,
-            maximumStudentsCount = course.MaximumStudentsCount,
-            remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count(student => student.Status == "Accepted")),
-            semester = course.Semester,
-            status = course.Status
-        };
+        return ConvertEntityToPreviewModel(course);
     }
 
     public async Task SignUp(string id, Guid courseId)
@@ -183,7 +159,8 @@ public class CoursesService : ICoursesService
                 name = course.Name,
                 startYear = course.StartYear,
                 maximumStudentsCount = course.MaximumStudentsCount,
-                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count(student => student.Status == "Accepted")),
+                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - 
+                                                  course.Students.Count(student => student.Status == "Accepted")),
                 semester = course.Semester,
                 status = course.Status
         }).ToList();
@@ -207,7 +184,7 @@ public class CoursesService : ICoursesService
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
         
-        var course = ConvertEntityToModel(courseEntity);
+        var course = ConvertEntityToDetailedModel(courseEntity);
 
         return course;
     }
@@ -220,17 +197,16 @@ public class CoursesService : ICoursesService
         int page,
         int pageSize)
     {
-        var courses = await _coursesRepository.GetByFiltersAndPagination(sort, search, hasPlacesAndOpen, semester, page, pageSize);
+        var courses = await _coursesRepository
+            .GetByFiltersAndPagination(
+            sort, 
+            search, 
+            hasPlacesAndOpen, 
+            semester, 
+            page, 
+            pageSize);
         
-        return courses.Select(course => new CampusCoursePreviewModel{
-                id = course.Id,
-                name = course.Name,
-                startYear = course.StartYear,
-                maximumStudentsCount = course.MaximumStudentsCount,
-                remainingSlotsCount = Math.Max(0, course.MaximumStudentsCount - course.Students.Count),
-                semester = course.Semester,
-                status = course.Status
-        }).ToList();
+        return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
     public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, string status)
@@ -267,10 +243,13 @@ public class CoursesService : ICoursesService
         
         await _coursesRepository.Update(courseEntity);
         
-        return ConvertEntityToModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity);
     }
     
-    public async Task<CampusCourseDetailsModel> EditCoursesRequirementsAndAnnotations(Guid id, string requirements, string annotations)
+    public async Task<CampusCourseDetailsModel> EditCoursesRequirementsAndAnnotations(
+        Guid id,
+        string requirements, 
+        string annotations)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
 
@@ -284,7 +263,7 @@ public class CoursesService : ICoursesService
         
         await _coursesRepository.Update(courseEntity);
         
-        return ConvertEntityToModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity);
     }
     
     public async Task<CampusCourseDetailsModel> AddTeacherToCourse(Guid courseId, Guid teacherId)
@@ -320,12 +299,13 @@ public class CoursesService : ICoursesService
         courseEntity.Teachers.Add(teacher);
         teacher.User = user;
         
-        return ConvertEntityToModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity);
     }
 
-    private CampusCourseDetailsModel ConvertEntityToModel(CourseEntity courseEntity)
+    private CampusCourseDetailsModel ConvertEntityToDetailedModel(CourseEntity courseEntity)
     {
-        var students = courseEntity.Students.Select(student => new CampusCourseStudentModel
+        var students = courseEntity.Students
+            .Select(student => new CampusCourseStudentModel
         {
             id = student.UserId,
             name = student.User.FullName,
@@ -335,20 +315,22 @@ public class CoursesService : ICoursesService
             finalResult = student.FinalResult,
         }).ToList();
         
-        var teachers = courseEntity.Teachers.Select(teacher => new CampusCourseTeacherModel
+        var teachers = courseEntity.Teachers
+            .Select(teacher => new CampusCourseTeacherModel
         {
             name = teacher.User.FullName,
             email = teacher.User.Email,
             isMain = teacher.IsMain
         }).ToList();
         
-        var notifications = courseEntity.Notifications.Select(notification => new CampusCourseNotificationModel
+        var notifications = courseEntity.Notifications
+            .Select(notification => new CampusCourseNotificationModel
         {
             text = notification.Text,
             isImportant = notification.IsImportant,
         }).ToList();
         
-        return  new CampusCourseDetailsModel
+        return new CampusCourseDetailsModel
         {
             id = courseEntity.Id,
             name = courseEntity.Name,
@@ -363,6 +345,21 @@ public class CoursesService : ICoursesService
             students = students,
             teachers = teachers,
             notifications = notifications,
+        };
+    }
+
+    private CampusCoursePreviewModel ConvertEntityToPreviewModel(CourseEntity courseEntity)
+    {
+        return new CampusCoursePreviewModel
+        {
+            id = courseEntity.Id,
+            name = courseEntity.Name,
+            startYear = courseEntity.StartYear,
+            maximumStudentsCount = courseEntity.MaximumStudentsCount,
+            remainingSlotsCount = Math.Max(0, courseEntity.MaximumStudentsCount - 
+                                              courseEntity.Students.Count(student => student.Status == "Accepted")),
+            semester = courseEntity.Semester,
+            status = courseEntity.Status
         };
     }
     
@@ -403,7 +400,7 @@ public class CoursesService : ICoursesService
         courseEntity.Annotations = annotations;
         
         await _coursesRepository.Update(courseEntity);
-        return ConvertEntityToModel(courseEntity); 
+        return ConvertEntityToDetailedModel(courseEntity); 
     }
 
     public async Task<CampusCourseDetailsModel> ChangeStudentStatus(Guid courseId, Guid studentId, string status)
@@ -436,7 +433,7 @@ public class CoursesService : ICoursesService
         
         await _studentsRepository.Update(student);
          
-        return ConvertEntityToModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity);
     }
     
     public async Task<CampusCourseDetailsModel> ChangeStudentMark(Guid courseId, Guid studentId, string markType, string mark)
@@ -465,8 +462,6 @@ public class CoursesService : ICoursesService
             throw new Exception(); // обработать
         }
 
-
-
         if (markType == Enum.GetName(MarkType.Midterm))
         {
             student.MidtermResult = mark;
@@ -483,6 +478,6 @@ public class CoursesService : ICoursesService
         
         await _studentsRepository.Update(student);
          
-        return ConvertEntityToModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity);
     }
 }

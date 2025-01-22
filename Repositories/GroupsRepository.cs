@@ -1,5 +1,6 @@
 ﻿using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using courses.Middleware;
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
@@ -15,9 +16,11 @@ public interface IGroupsRepository
     
     Task Add(GroupEntity groupEntity);
 
-    Task Update(Guid id, string name);
+    Task Update(GroupEntity groupEntity);
 
     Task Delete(Guid id);
+    
+    Task CheckExistence(Guid id);
 
     Task<List<CourseEntity>> GetCourses(Guid id);
 
@@ -37,7 +40,8 @@ public class GroupsRepository : IGroupsRepository
     {
         var group = await _context.Groups
             .AsNoTracking()
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id) ?? 
+                    throw new NotFoundException(id.ToString(), "Group", "ID");
 
         return group;
     }
@@ -62,20 +66,17 @@ public class GroupsRepository : IGroupsRepository
         await _context.SaveChangesAsync();
     }
     
-    public async Task Update(Guid id, string name)
+    public async Task Update(GroupEntity groupEntity)
     {
-        var group = await _context.Groups
-            .FirstOrDefaultAsync(g => g.Id == id); 
-            
-        group.Name = name;
-        
+        _context.Groups.Update(groupEntity);
         await _context.SaveChangesAsync();
     }
     
     public async Task Delete(Guid id)
     {
         var group = await _context.Groups
-            .FirstOrDefaultAsync(g => g.Id == id); 
+            .FirstOrDefaultAsync(g => g.Id == id) ?? 
+                    throw new NotFoundException(id.ToString(), "Group", "ID");
             
         _context.Groups.Remove(group);
         
@@ -92,6 +93,19 @@ public class GroupsRepository : IGroupsRepository
             .ToListAsync();
         
         return courses;
+    }
+
+    public async Task CheckExistence(Guid id)
+    {
+        var group = await _context.Groups
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (group is null)
+        { 
+            throw new NotFoundException(id.ToString(), "Group", "ID");
+        }
     }
 
     public async Task<List<TeacherEntity>> GetWithDetailedCourses(string semester, List<Guid> groupsIds)

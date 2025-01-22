@@ -3,6 +3,7 @@ using courses.Extensions;
 using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,33 +13,35 @@ public static class CoursesEndpoints
 {
     public static IEndpointRouteBuilder MapCoursesEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/courses/{id}/details", GetCourseDetailedInfo);
+        var courses = endpoints.MapGroup("/courses").RequireAuthorization();
+        
+        courses.MapGet("/{id}/details", GetCourseDetailedInfo);
         
         endpoints.MapPost("/groups/{groupId}", CreateCourse).RequirePermissions(Permission.Create);
         
-        endpoints.MapPost("/courses/{id}/status", EditCoursesStatus).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/status", EditCoursesStatus).RequirePermissions(Permission.Update);
         
-        endpoints.MapPost("/courses/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations).RequirePermissions(Permission.Update);
         
-        endpoints.MapDelete("/courses/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
+        courses.MapDelete("/{id}", DeleteCourse).RequirePermissions(Permission.Delete);
         
-        endpoints.MapPost("/courses/{id}/notification", CreateNotification).RequirePermissions(Permission.Create);
+        courses.MapPost("/{id}/notification", CreateNotification).RequirePermissions(Permission.Create);
         
-        endpoints.MapPut("/courses/{id}", EditCourse).RequirePermissions(Permission.Update);
+        courses.MapPut("/{id}", EditCourse).RequirePermissions(Permission.Update);
 
-        endpoints.MapPost("/courses/{id}/sign-up", SignUpCourse);
+        courses.MapPost("/{id}/sign-up", SignUpCourse);
         
-        endpoints.MapPost("/courses/{id}/teacher", AddTeacherToCourse).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/teacher", AddTeacherToCourse).RequirePermissions(Permission.Update);
         
-        endpoints.MapGet("/courses/my", GetMyCourses);
+        courses.MapGet("/my", GetMyCourses);
         
-        endpoints.MapGet("/courses/teaching", GetTeachingCourses);
+        courses.MapGet("/teaching", GetTeachingCourses);
         
-        endpoints.MapGet("/courses/list", GetFilteredCourses);
+        courses.MapGet("/list", GetFilteredCourses);
         
-        endpoints.MapPost("/courses/{id}/student-status/{studentId}", ChangeStudentStatus).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/student-status/{studentId}", ChangeStudentStatus).RequirePermissions(Permission.Update);
         
-        endpoints.MapPost("/courses/{id}/marks/{studentId}", ChangeStudentMark).RequirePermissions(Permission.Update);
+        courses.MapPost("/{id}/marks/{studentId}", ChangeStudentMark).RequirePermissions(Permission.Update);
         
         return endpoints;
     }
@@ -47,8 +50,16 @@ public static class CoursesEndpoints
     private static async Task<IResult> CreateCourse(
         Guid groupId,
         CreateCampusCourseModel request,
+        IValidator<CreateCampusCourseModel> validator,
         CoursesService coursesService)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
         var response = await coursesService.Create(
             groupId, 
             request.name, 
@@ -98,7 +109,6 @@ public static class CoursesEndpoints
     {
         var userId = context.User.Claims.FirstOrDefault(
             c => c.Type == "userId");
-        ;
 
         if (userId == null || string.IsNullOrEmpty(userId.Value))
         {
@@ -152,6 +162,7 @@ public static class CoursesEndpoints
     [Authorize]
     private static async Task<IResult> GetFilteredCourses(
         CoursesService coursesService,
+        IValidator<CampusCourseFilterModel> validator,
         [FromQuery] SortList? sort,
         [FromQuery] string? search,
         [FromQuery] bool? hasPlacesAndOpen,
@@ -159,7 +170,30 @@ public static class CoursesEndpoints
         [FromQuery, Range(1, int.MaxValue)] int page,
         [FromQuery, Range(1, int.MaxValue)] int pageSize)
     {
-        var response = await coursesService.GetFilteredCourses(sort, search, hasPlacesAndOpen, semester, page, pageSize);
+        var request = new CampusCourseFilterModel
+        {
+            sort = sort,
+            search = search,
+            hasPlacesAndOpen = hasPlacesAndOpen,
+            semester = semester,
+            page = page,
+            pageSize = pageSize
+        };
+        
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
+        var response = await coursesService.GetFilteredCourses(
+            sort, 
+            search, 
+            hasPlacesAndOpen, 
+            semester, 
+            page, 
+            pageSize);
         
         return Results.Ok(response);
     }

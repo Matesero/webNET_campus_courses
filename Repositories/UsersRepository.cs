@@ -1,4 +1,5 @@
-﻿using courses.Models.DTO;
+﻿using courses.Middleware;
+using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,8 @@ public interface IUsersRepository
     Task<List<UserEntity>> GetAll();
     
     Task<UserRolesModel> GetRoles(Guid userId);
+    
+    Task CheckExistence(Guid id);
 }
 
 public class UsersRepository : IUsersRepository
@@ -40,7 +43,8 @@ public class UsersRepository : IUsersRepository
     public async Task Update(Guid id, string fullName, DateTime birthDate)
     {
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == id) ?? throw new Exception($"User with id {id} does not exist");
+            .FirstOrDefaultAsync(u => u.Id == id) ?? 
+                   throw new NotFoundException(id.ToString(), "User", "ID");
         
         user.FullName = fullName;
         user.BirthDate = birthDate;
@@ -52,7 +56,8 @@ public class UsersRepository : IUsersRepository
     {
         var userEntity = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email) ?? throw new Exception($"User with email {email} does not exist");
+            .FirstOrDefaultAsync(u => u.Email == email) ?? 
+                         throw new NotFoundException(email, "User", "email");
 
         return userEntity;
     }
@@ -61,7 +66,8 @@ public class UsersRepository : IUsersRepository
     {
         var userEntity = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == id) ?? throw new Exception($"User with id {id} does not exist");
+            .FirstOrDefaultAsync(u => u.Id == id) ?? 
+                         throw new NotFoundException(id.ToString(), "User", "ID");
 
         return userEntity;
     }
@@ -117,5 +123,18 @@ public class UsersRepository : IUsersRepository
             isTeacher = teacherQuery,
             isStudent = studentQuery,
         };
+    }
+    
+    public async Task CheckExistence(Guid id)
+    {
+        var group = await _context.Users
+            .AsNoTracking()
+            .Where(c => c.Id == id)
+            .FirstOrDefaultAsync();
+
+        if (group is null)
+        { 
+            throw new NotFoundException(id.ToString(), "User", "ID");
+        }
     }
 }

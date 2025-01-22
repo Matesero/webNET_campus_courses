@@ -2,6 +2,7 @@
 using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 
 namespace courses.Endpoints;
@@ -18,19 +19,29 @@ public static class UsersEndpoints
  
         endpoints.MapPost("/login", Login);
         
+        endpoints.MapPost("/logout", Logout);
+        
         endpoints.MapGet("/profile", GetUserProfile);
         
         endpoints.MapPut("/profile", EditUserProfile);
-        
         
         return endpoints;
     }
 
     private static async Task<IResult> Register(
         UserRegisterModel request,
+        IValidator<UserRegisterModel> validator,
         UsersService usersService)
     {
-        var response =  await usersService.Register(request.fullName,
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+        
+        var response =  await usersService.Register(
+            request.fullName,
             request.birthDate,
             request.email,
             request.password,
@@ -38,11 +49,20 @@ public static class UsersEndpoints
 
         return Results.Ok(response);
     }
+    
     private static async Task<IResult> Login(
-        UserLoginModel request, 
+        UserLoginModel request,
+        IValidator<UserLoginModel> validator,
         UsersService usersService,
         HttpContext context)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+        
         var response = await usersService.Login(request.email, request.password);
         
         return Results.Ok(response);
@@ -69,9 +89,17 @@ public static class UsersEndpoints
     [Authorize]
     private static async Task<IResult> EditUserProfile(
         EditUserProfileModel request,
+        IValidator<EditUserProfileModel> validator,
         UsersService usersService,
         HttpContext context)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+         
         var user = context.User.Claims.FirstOrDefault(
             c => c.Type == "userId");;
         
@@ -80,9 +108,28 @@ public static class UsersEndpoints
             throw new Exception();
         }
         
-        var response = await usersService.EditProfile(user.Value, request.fullName, request.birthDate);
+        var response = await usersService.EditProfile(
+            user.Value, 
+            request.fullName, 
+            request.birthDate);
         
         return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> Logout(
+        HttpRequest request,
+        BlackTokensService blackTokensService)
+    {
+        var token = request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+        
+        await blackTokensService.Add(token);
+        
+        return Results.Ok(new 
+        {
+            status = 200,
+            message = "Logged Out"
+        });
     }
     
     [Authorize]

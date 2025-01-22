@@ -4,6 +4,8 @@ using courses.Infrastructure;
 using courses.Models.Entities;
 using courses.Repositories;
 using courses.Services;
+using courses.Validators;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +32,13 @@ services.AddScoped<ICoursesRepository, CoursesRepository>();
 services.AddScoped<ITeachersRepository, TeachersRepository>();
 services.AddScoped<IStudentsRepository, StudentsRepository>();
 services.AddScoped<INotificationsRepository, NotificationsRepository>();
+services.AddScoped<IBlackTokensRepository, BlackTokensRepository>();
+
+services.AddValidatorsFromAssemblyContaining<RegistrationValidator>();
+services.AddValidatorsFromAssemblyContaining<LoginValidator>();
+services.AddValidatorsFromAssemblyContaining<EditProfileValidator>();
+services.AddValidatorsFromAssemblyContaining<CreateGroupValidator>();
+services.AddValidatorsFromAssemblyContaining<CreateCourseValidator>();
 
 services.AddControllers()
     .AddJsonOptions(options =>
@@ -41,6 +50,7 @@ services.AddControllers()
 services.AddScoped<UsersService>();
 services.AddScoped<GroupsService>();
 services.AddScoped<CoursesService>();
+services.AddScoped<BlackTokensService>();
 
 services.AddScoped<IJwtProvider, JwtProvider>();
 services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -50,6 +60,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseMiddlewareHandlerException();
 app.UseAuthentication();
 app.UseAuthorization();
 

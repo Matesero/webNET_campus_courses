@@ -2,6 +2,7 @@
 using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,15 +12,17 @@ public static class GroupsEndpoints
 {
     public static IEndpointRouteBuilder MapGroupsEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/groups", GetAll);
-        
-        endpoints.MapPost("/groups", CreateGroup).RequirePermissions(Permission.Create);
-        
-        endpoints.MapPut("/groups/{id}", EditGroup).RequirePermissions(Permission.Update);
-        
-        endpoints.MapDelete("/groups/{id}", DeleteGroup).RequirePermissions(Permission.Delete);
+        var groups = endpoints.MapGroup("/groups").RequireAuthorization();
 
-        endpoints.MapGet("/groups/{id}", GetListCourses);
+        groups.MapGet("", GetAll).AllowAnonymous();
+        
+        groups.MapPost("", CreateGroup).RequirePermissions(Permission.Create);
+        
+        groups.MapPut("/{id}", EditGroup).RequirePermissions(Permission.Update);
+        
+        groups.MapDelete("/{id}", DeleteGroup).RequirePermissions(Permission.Delete);
+
+        groups.MapGet("/{id}", GetListCourses);
         
         endpoints.MapPost("/report", Report).RequirePermissions(Permission.Read).WithTags("Report");
         
@@ -38,8 +41,16 @@ public static class GroupsEndpoints
     [Authorize]
     private static async Task<IResult> CreateGroup(
         CreateCampusGroupModel request,
+        IValidator<CreateCampusGroupModel> validator,
         GroupsService groupsService)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+        
         var response = await groupsService.Create(request.name);
         
         return Results.Ok(response);
@@ -49,11 +60,19 @@ public static class GroupsEndpoints
     private static async Task<IResult> EditGroup(
         Guid id,
         EditCampusGroupModel request,
+        IValidator<EditCampusGroupModel> validator,
         GroupsService groupsService)
     {
-        await groupsService.Edit(id, request.name);
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
         
-        return Results.Ok();
+        var response = await groupsService.Edit(id, request.name);
+        
+        return Results.Ok(response);
     }
     
     [Authorize]

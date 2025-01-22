@@ -1,4 +1,5 @@
 ﻿using courses.Infrastructure;
+using courses.Middleware;
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Repositories;
@@ -11,7 +12,10 @@ public class UsersService
     private readonly IUsersRepository _usersRepository;
     private readonly IJwtProvider _jwtProvider;
 
-    public UsersService(IUsersRepository usersRepository, IPasswordHasher passwordHasher, IJwtProvider jwtProvider)
+    public UsersService(
+        IUsersRepository usersRepository, 
+        IPasswordHasher passwordHasher, 
+        IJwtProvider jwtProvider)
     {
         _usersRepository = usersRepository;
         _passwordHasher = passwordHasher;
@@ -22,7 +26,12 @@ public class UsersService
     {
         var hashedPassword = _passwordHasher.Generate(password);
         
-        var user = UserEntity.Create(Guid.NewGuid(), fullName, birthDate, email, hashedPassword);
+        var user = UserEntity.Create(
+            Guid.NewGuid(), 
+            fullName, 
+            birthDate, 
+            email, 
+            hashedPassword);
         
         await _usersRepository.Add(user);
         
@@ -42,7 +51,7 @@ public class UsersService
 
         if (result == false)
         {
-            throw new Exception(); // обработать
+            throw new InvalidPasswordException();
         }
 
         var response = new TokenResponse 
@@ -52,6 +61,7 @@ public class UsersService
         
         return response;
     }
+    
     public async Task<UserProfileModel> GetProfile(string userId)
     {
         if (!Guid.TryParse(userId, out var id))
@@ -61,17 +71,17 @@ public class UsersService
 
         var profile = await _usersRepository.GetById(id);
 
-        if (profile is null)
-        {
-            throw new Exception(); // обработать
-        }
-
         return new UserProfileModel
         {
             fullName = profile.FullName,
             email = profile.Email,
             birthDate = profile.BirthDate,
         };
+    } 
+    
+    public async Task<UserEntity> GetProfileByEmail(string email)
+    {
+        return await _usersRepository.GetByEmail(email);
     } 
     
     public async Task<UserProfileModel> EditProfile(string userId, string fullName, DateTime birthDate)
@@ -82,11 +92,9 @@ public class UsersService
         }
 
         var profile = await _usersRepository.GetById(id);
-
-        if (profile is null)
-        {
-            throw new Exception(); // обработать
-        }
+        
+        profile.FullName = fullName;
+        profile.BirthDate = birthDate;
         
         await _usersRepository.Update(id, fullName, birthDate);
 
