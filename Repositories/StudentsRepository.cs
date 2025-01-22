@@ -7,6 +7,8 @@ namespace courses.Repositories;
 public interface IStudentsRepository
 {
     Task Add(StudentEntity studentEntity);
+    
+    Task Update(StudentEntity studentEntity);
 }
 
 public class StudentsRepository : IStudentsRepository
@@ -32,6 +34,11 @@ public class StudentsRepository : IStudentsRepository
                 throw new InvalidOperationException("This user is already assigned to the course");
             }
         }
-        
+    }
+
+    public async Task Update(StudentEntity studentEntity)
+    {
+        _context.Students.Update(studentEntity);
+        await _context.SaveChangesAsync();
     }
 }

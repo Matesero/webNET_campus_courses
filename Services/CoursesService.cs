@@ -405,4 +405,84 @@ public class CoursesService : ICoursesService
         await _coursesRepository.Update(courseEntity);
         return ConvertEntityToModel(courseEntity); 
     }
+
+    public async Task<CampusCourseDetailsModel> ChangeStudentStatus(Guid courseId, Guid studentId, string status)
+    {
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
+
+        if (courseEntity is null)
+        {
+            throw new KeyNotFoundException($"Course with id {courseId} not found");
+        }
+        
+        var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
+
+        if (student is null)
+        {
+            throw new KeyNotFoundException($"Student with id {studentId} not found");
+        }
+
+        if (student.Status != Enum.GetName(StudentStatuses.InQueue))
+        {
+            throw new Exception(); // обработать
+        }
+        
+        student.Status = status;
+        
+        courseEntity.Students = courseEntity.Students
+            .Where(s => s.UserId != studentId)
+            .Append(student)
+            .ToList();
+        
+        await _studentsRepository.Update(student);
+         
+        return ConvertEntityToModel(courseEntity);
+    }
+    
+    public async Task<CampusCourseDetailsModel> ChangeStudentMark(Guid courseId, Guid studentId, string markType, string mark)
+    {
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
+
+        if (courseEntity is null)
+        {
+            throw new KeyNotFoundException($"Course with id {courseId} not found");
+        }
+        
+        var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
+
+        if (student is null)
+        {
+            throw new KeyNotFoundException($"Student with id {studentId} not found");
+        }
+
+        if (!Enum.TryParse<MarkType>(markType, out var markTypeCheck))
+        {
+            throw new Exception(); // обработать
+        }
+        
+        if (!Enum.TryParse<StudentMarks>(mark, out var markCheck))
+        {
+            throw new Exception(); // обработать
+        }
+
+
+
+        if (markType == Enum.GetName(MarkType.Midterm))
+        {
+            student.MidtermResult = mark;
+        }
+        else
+        {
+            student.FinalResult = mark;
+        }
+        
+        courseEntity.Students = courseEntity.Students
+            .Where(s => s.UserId != studentId)
+            .Append(student)
+            .ToList();
+        
+        await _studentsRepository.Update(student);
+         
+        return ConvertEntityToModel(courseEntity);
+    }
 }

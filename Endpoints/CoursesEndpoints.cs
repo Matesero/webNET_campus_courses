@@ -5,8 +5,6 @@ using courses.Models.enums;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Diagnostics;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace courses.Endpoints;
 
@@ -37,6 +35,10 @@ public static class CoursesEndpoints
         endpoints.MapGet("/courses/teaching", GetTeachingCourses);
         
         endpoints.MapGet("/courses/list", GetFilteredCourses);
+        
+        endpoints.MapPost("/courses/{id}/student-status/{studentId}", ChangeStudentStatus).RequirePermissions(Permission.Update);
+        
+        endpoints.MapPost("/courses/{id}/marks/{studentId}", ChangeStudentMark).RequirePermissions(Permission.Update);
         
         return endpoints;
     }
@@ -209,6 +211,30 @@ public static class CoursesEndpoints
             request.semester, 
             request.requirements, 
             request.annotations);
+        
+        return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> ChangeStudentStatus(
+        [FromBody] EditCourseStudentStatusModel request,
+        CoursesService coursesService,
+        [FromQuery] Guid studentId,
+        [FromQuery] Guid id)
+    {
+        var response = await coursesService.ChangeStudentStatus(id, studentId, request.status);
+        
+        return Results.Ok(response);
+    }
+
+    [Authorize]
+    private static async Task<IResult> ChangeStudentMark(
+        [FromBody] EditCourseStudentMarkModel request,
+        CoursesService coursesService,
+        [FromQuery] Guid studentId,
+        [FromQuery] Guid id)
+    {
+        var response = await coursesService.ChangeStudentMark(id, studentId, request.markType, request.mark);
         
         return Results.Ok(response);
     }
