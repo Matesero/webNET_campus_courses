@@ -56,7 +56,7 @@ public class UsersService
 
         if (result == false)
         {
-            throw new InvalidPasswordException();
+            throw new UnauthorizedException("The password is incorrect");
         }
 
         var response = new TokenResponse 

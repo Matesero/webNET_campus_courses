@@ -77,17 +77,22 @@ public class CustomExceptionHandlerMiddleware
                 });
                 break;
             
-            case KeyNotFoundException:
-                code = HttpStatusCode.NotFound;
+            case BadRequestException badRequestException:
+                code = HttpStatusCode.BadRequest;
+                result = JsonSerializer.Serialize(new
+                {
+                    status = (int)code,
+                    message = badRequestException.Message
+                });
                 break;
             
-            case InvalidPasswordException invalidPasswordException:
+            case UnauthorizedException unauthorizedException:
                 context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 context.Response.ContentType = "application/json";
                 result = JsonSerializer.Serialize(new
                 {
                     status = (int)code,
-                    message = invalidPasswordException.Message
+                    message = unauthorizedException.Message
                 });
                 break;
             
@@ -99,6 +104,15 @@ public class CustomExceptionHandlerMiddleware
                 {
                     status = (int)code,
                     message = notFoundException.Message
+                });
+                break;
+            
+            case ForbiddenException forbiddenException:
+                code = HttpStatusCode.Forbidden;
+                result = JsonSerializer.Serialize(new
+                {
+                    status = (int)code,
+                    message = forbiddenException.Message
                 });
                 break;
         }

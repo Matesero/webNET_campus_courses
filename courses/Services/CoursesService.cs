@@ -98,7 +98,7 @@ public class CoursesService : ICoursesService
 
         if (courseEntity.Status != Enum.GetName(CourseStatuses.OpenForAssigning))
         {
-            throw new KeyNotFoundException($"Course requires at least 1 slot"); // Обработать
+            throw new BadRequestException("Course not open");
         }
 
         var remainingSlots = courseEntity.MaximumStudentsCount - 
@@ -106,17 +106,17 @@ public class CoursesService : ICoursesService
         
         if (remainingSlots <= 0 )
         {
-            throw new KeyNotFoundException($"Course requires at least 2 slot"); // Обработать
+            throw new BadRequestException("No remaining slots in the course");
         }
         
         if (courseEntity.Students.Any(student => student.UserId == userId))
         {
-            throw new KeyNotFoundException($"Course requires at least 3 slot");
+            throw new BadRequestException("A student is already in this course");
         }
         
         if (courseEntity.Teachers.Any(teacher => teacher.UserId == userId))
         {
-            throw new KeyNotFoundException($"Course requires at least 4 slot");
+            throw new BadRequestException("A teacher cannot sign up for their course");
         }
 
         var studentEntity = StudentEntity.Create(userId, courseId);
@@ -148,7 +148,7 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 4)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException(); 
         }
 
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
@@ -200,7 +200,7 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 4)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException(); 
         }
         
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
@@ -217,7 +217,7 @@ public class CoursesService : ICoursesService
         }
          else
          {
-             throw new Exception(); // обработать
+             throw new BadRequestException("Can't put a past status");
          }
         
         await _coursesRepository.Update(courseEntity);
@@ -235,7 +235,7 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 4)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException(); 
         }
         
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
@@ -257,17 +257,21 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 5)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException(); 
         }
         
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
 
-        if (courseEntity.Students.Any(student => student.UserId == teacherId) ||
-            courseEntity.Teachers.Any(teacher => teacher.UserId == teacherId))
+        if (courseEntity.Students.Any(student => student.UserId == teacherId))
         {
-            throw new Exception(); // обработать
+            throw new BadRequestException("User is already student");
         }
-        
+
+        if (courseEntity.Teachers.Any(teacher => teacher.UserId == teacherId))
+        {
+            throw new BadRequestException("User is already teacher");
+        }
+
         var user = await _usersRepository.GetById(teacherId);
         
         var teacher = TeacherEntity.Create(
@@ -365,7 +369,7 @@ public class CoursesService : ICoursesService
 
         if (maximumStudentsCount < courseEntity.Students.Count(student => student.Status == "Accepted"))
         {
-            throw new Exception(); // обработать 
+            throw new BadRequestException("There are more accepted students than maximum students count");
         }
         courseEntity.MaximumStudentsCount = maximumStudentsCount;
         
@@ -387,7 +391,7 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 4)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException(); 
         }
         
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
@@ -401,7 +405,7 @@ public class CoursesService : ICoursesService
 
         if (student.Status != Enum.GetName(StudentStatuses.InQueue))
         {
-            throw new Exception(); // обработать
+            throw new BadRequestException("This student is not in queue. Their status cannot be changed");
         }
         
         student.Status = status;
@@ -427,7 +431,7 @@ public class CoursesService : ICoursesService
 
         if ((int)userRole < 4)
         {
-            throw new Exception(); // обработать
+            throw new ForbiddenException();
         }
         
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
@@ -436,12 +440,12 @@ public class CoursesService : ICoursesService
 
         if (student is null)
         {
-            throw new KeyNotFoundException($"Student with id {studentId} not found"); // обработать
+            throw new NotFoundException(studentId.ToString(),"Student", "ID");
         }
 
         if (student.Status != Enum.GetName(StudentStatuses.Accepted))
         {
-            throw new Exception(); // обработать
+            throw new BadRequestException("Student not accepted in course");
         }
         
         if (markType == Enum.GetName(MarkType.Midterm))

@@ -1,4 +1,5 @@
 ﻿using courses.Infrastructure;
+using courses.Middleware;
 using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
@@ -123,7 +124,7 @@ public class GroupsService : IGroupsService
                 {
                     if (!Guid.TryParse(group.id.ToString(), out var groupId))
                     {
-                        throw new Exception("Invalid Group ID");
+                        throw new BadRequestException("Invalid Group ID");
                     }
                     
                     var courses = mainTeachers

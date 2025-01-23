@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using courses.Extensions;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -17,19 +18,13 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        var userId = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");
-
-        if (userId is null || !Guid.TryParse(userId.Value, out var id))
-        {
-            return;
-        }
+        var userId = context.User.GetUserId();
         
         using var scope = _serviceScopeFactory.CreateScope();
         
         var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
 
-        var permissions = await permissionService.GetPermissionsAsync(id);
+        var permissions = await permissionService.GetPermissionsAsync(userId);
         
         if (permissions.Intersect(requirement.Permissions).Any())
         {

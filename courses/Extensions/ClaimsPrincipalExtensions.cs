@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using courses.Middleware;
 
 namespace courses.Extensions;
 
@@ -10,7 +11,7 @@ public static class ClaimsPrincipalExtensions
 
         if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value) || !Guid.TryParse(userIdClaim.Value, out var userId))
         {
-            throw new Exception(""); // Обработать
+            throw new UnauthorizedException("Invalid or missing userId in token");
         }
         return userId;
     }
