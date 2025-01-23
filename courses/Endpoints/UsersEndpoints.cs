@@ -15,15 +15,15 @@ public static class UsersEndpoints
         
         endpoints.MapGet("/roles", GetRoles).WithTags("Users");
         
-        endpoints.MapPost("/registration", Register);
+        endpoints.MapPost("/registration", Register).WithTags("Account");
  
-        endpoints.MapPost("/login", Login);
+        endpoints.MapPost("/login", Login).WithTags("Account");
         
-        endpoints.MapPost("/logout", Logout);
+        endpoints.MapPost("/logout", Logout).WithTags("Account");
         
-        endpoints.MapGet("/profile", GetUserProfile);
+        endpoints.MapGet("/profile", GetUserProfile).WithTags("Account");
         
-        endpoints.MapPut("/profile", EditUserProfile);
+        endpoints.MapPut("/profile", EditUserProfile).WithTags("Account");
         
         return endpoints;
     }

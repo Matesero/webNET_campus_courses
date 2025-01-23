@@ -13,12 +13,12 @@ public static class CoursesEndpoints
 {
     public static IEndpointRouteBuilder MapCoursesEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var courses = endpoints.MapGroup("/courses").RequireAuthorization();
+        var courses = endpoints.MapGroup("/courses").RequireAuthorization().WithTags("Course");
         
         courses.MapGet("/{id}/details", GetCourseDetailedInfo);
         
         endpoints.MapPost("/groups/{groupId}", CreateCourse)
-            .RequirePermissions(Permission.Create);
+            .RequirePermissions(Permission.Create).WithTags("Course");
 
         courses.MapPost("/{id}/status", EditCoursesStatus);
 

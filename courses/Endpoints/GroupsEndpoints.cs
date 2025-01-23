@@ -12,7 +12,7 @@ public static class GroupsEndpoints
 {
     public static IEndpointRouteBuilder MapGroupsEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var groups = endpoints.MapGroup("/groups").RequireAuthorization();
+        var groups = endpoints.MapGroup("/groups").RequireAuthorization().WithTags("Group");
 
         groups.MapGet("", GetAll);
         
