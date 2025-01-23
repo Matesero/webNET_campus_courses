@@ -3,13 +3,12 @@ using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Models.enums;
 using courses.Repositories;
-using Microsoft.Extensions.Logging.Console;
 
 namespace courses.Services;
 
 public interface ICoursesService
 {
-    Task<CampusCoursePreviewModel> Create(
+    Task<List<CampusCoursePreviewModel>> Create(
         Guid groupId,
         string name,
         int startYear,
@@ -48,7 +47,7 @@ public class CoursesService : ICoursesService
         _notificationRepository = notificationRepository;
     }
 
-    public async Task<CampusCoursePreviewModel> Create(
+    public async Task<List<CampusCoursePreviewModel>> Create(
         Guid groupId, 
         string name, 
         int startYear,
@@ -82,8 +81,10 @@ public class CoursesService : ICoursesService
 
         await _coursesRepository.Add(course);
         await _teachersRepository.Add(mainTeacher);
+        
+        var courses = await _groupsRepository.GetCourses(groupId);
 
-        return ConvertEntityToPreviewModel(course);
+        return courses.Select(courseEntity => ConvertEntityToPreviewModel(courseEntity)).ToList();
     }
     
     public async Task Delete(Guid id)
@@ -110,17 +111,17 @@ public class CoursesService : ICoursesService
         
         if (remainingSlots <= 0 )
         {
-            throw new KeyNotFoundException($"Course requires at least 1 slot"); // Обработать
+            throw new KeyNotFoundException($"Course requires at least 2 slot"); // Обработать
         }
         
         if (courseEntity.Students.Any(student => student.UserId.ToString() == id))
         {
-            throw new KeyNotFoundException($"Course requires at least 1 slot");
+            throw new KeyNotFoundException($"Course requires at least 3 slot");
         }
         
         if (courseEntity.Teachers.Any(teacher => teacher.UserId.ToString() == id))
         {
-            throw new KeyNotFoundException($"Course requires at least 1 slot");
+            throw new KeyNotFoundException($"Course requires at least 4 slot");
         }
 
         var studentEntity = StudentEntity.Create(userId, courseId);
@@ -152,13 +153,17 @@ public class CoursesService : ICoursesService
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
-    public async Task CreateNotification(Guid courseId, string text, bool isImportant)
+    public async Task<CampusCourseDetailsModel> CreateNotification(Guid courseId, string text, bool isImportant)
     {
-        await _coursesRepository.CheckExistence(courseId);
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
 
         var notificationEntity = NotificationEntity.Create(courseId, text, isImportant);
         
         await _notificationRepository.Add(notificationEntity);
+        
+        courseEntity.Notifications.Add(notificationEntity);
+        
+        return ConvertEntityToDetailedModel(courseEntity);
     }
 
     public async Task<CampusCourseDetailsModel> GetDetailedInfo(Guid id)
@@ -188,17 +193,19 @@ public class CoursesService : ICoursesService
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
-    public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, CourseStatuses status)
+    public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, string statusString)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
         
+        var status = (CourseStatuses)Enum.Parse(typeof(CourseStatuses), statusString);
+        
         if (!Enum.TryParse<CourseStatuses>(courseEntity.Status, out var dbStatus))
         {
-            courseEntity.Status = status.ToString();
+            courseEntity.Status = statusString;
         }
          else if ((int)dbStatus < (int)status)
         {
-            courseEntity.Status = status.ToString();
+            courseEntity.Status = statusString;
         }
          else
          {
@@ -228,11 +235,6 @@ public class CoursesService : ICoursesService
     public async Task<CampusCourseDetailsModel> AddTeacherToCourse(Guid courseId, Guid teacherId)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
-        
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {courseId} not found");
-        }
 
         if (courseEntity.Students.Any(student => student.UserId == teacherId) ||
             courseEntity.Teachers.Any(teacher => teacher.UserId == teacherId))
@@ -241,12 +243,7 @@ public class CoursesService : ICoursesService
         }
         
         var user = await _usersRepository.GetById(teacherId);
-
-        if (user is null)
-        {
-            throw new KeyNotFoundException($"User with id {teacherId} not found");
-        }
-
+        
         var teacher = TeacherEntity.Create(
             teacherId,
             courseId,
@@ -332,29 +329,17 @@ public class CoursesService : ICoursesService
         string annotations)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
-    
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {id} not found");
-        }
         
         courseEntity.Name = name;
         courseEntity.StartYear = startYear;
 
-        if (courseEntity.MaximumStudentsCount < courseEntity.Students.Count(student => student.Status == "Accepted"))
+        if (maximumStudentsCount < courseEntity.Students.Count(student => student.Status == "Accepted"))
         {
             throw new Exception(); // обработать 
         }
         courseEntity.MaximumStudentsCount = maximumStudentsCount;
         
-        if (Enum.TryParse<Semesters>(semester, out var requestSemester))
-        {
-            courseEntity.Semester = semester;
-        }
-        else
-        {
-            throw new Exception(); // обработать
-        }
+        courseEntity.Semester = semester;
         courseEntity.Requirements = requirements;
         courseEntity.Annotations = annotations;
         
@@ -390,14 +375,13 @@ public class CoursesService : ICoursesService
         return ConvertEntityToDetailedModel(courseEntity);
     }
     
-    public async Task<CampusCourseDetailsModel> ChangeStudentMark(Guid courseId, Guid studentId, string markType, string mark)
+    public async Task<CampusCourseDetailsModel> ChangeStudentMark(
+        Guid courseId, 
+        Guid studentId, 
+        string markType, 
+        string mark)
     {
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
-
-        if (courseEntity is null)
-        {
-            throw new KeyNotFoundException($"Course with id {courseId} not found");
-        }
         
         var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
 
@@ -405,17 +389,7 @@ public class CoursesService : ICoursesService
         {
             throw new KeyNotFoundException($"Student with id {studentId} not found");
         }
-
-        if (!Enum.TryParse<MarkType>(markType, out var markTypeCheck))
-        {
-            throw new Exception(); // обработать
-        }
         
-        if (!Enum.TryParse<StudentMarks>(mark, out var markCheck))
-        {
-            throw new Exception(); // обработать
-        }
-
         if (markType == Enum.GetName(MarkType.Midterm))
         {
             student.MidtermResult = mark;

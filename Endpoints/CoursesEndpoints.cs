@@ -161,9 +161,9 @@ public static class CoursesEndpoints
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
         
-        await coursesService.CreateNotification(id, request.text, request.isImportant);
+        var response = await coursesService.CreateNotification(id, request.text, request.isImportant);
         
-        return Results.Ok();
+        return Results.Ok(response);
     }
 
     [Authorize]
@@ -271,8 +271,16 @@ public static class CoursesEndpoints
     private static async Task<IResult> EditCourse(
         Guid id,
         EditCampusCourseModel request,
+        IValidator<EditCampusCourseModel> validator,
         CoursesService coursesService)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
         var response = await coursesService.Edit(
             id,
             request.name, 
@@ -293,6 +301,13 @@ public static class CoursesEndpoints
         [FromQuery] Guid studentId,
         [FromQuery] Guid id)
     {
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
         var response = await coursesService.ChangeStudentStatus(
             id, 
             studentId, 
@@ -304,11 +319,23 @@ public static class CoursesEndpoints
     [Authorize]
     private static async Task<IResult> ChangeStudentMark(
         [FromBody] EditCourseStudentMarkModel request,
+        IValidator<EditCourseStudentMarkModel> validator,
         CoursesService coursesService,
         [FromQuery] Guid studentId,
         [FromQuery] Guid id)
     {
-        var response = await coursesService.ChangeStudentMark(id, studentId, request.markType, request.mark);
+        var validationResult = await validator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            throw new FluentValidation.ValidationException(validationResult.Errors);
+        }
+        
+        var response = await coursesService.ChangeStudentMark(
+            id, 
+            studentId, 
+            request.markType, 
+            request.mark);
         
         return Results.Ok(response);
     }

@@ -9,7 +9,7 @@ public class FilterCoursesValidator : AbstractValidator<CampusCourseFilterModel>
     public FilterCoursesValidator()
     {
         RuleFor(x => x.sort)
-            .Must(sort => Enum.IsDefined(typeof(SortList), sort))
+            .Must(sort => Enum.IsDefined(typeof(SortList), sort) || sort == null)
             .WithMessage("Sort is not a valid");
         
         RuleFor(x => x.hasPlacesAndOpen)

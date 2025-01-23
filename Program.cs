@@ -38,7 +38,17 @@ services.AddValidatorsFromAssemblyContaining<RegistrationValidator>();
 services.AddValidatorsFromAssemblyContaining<LoginValidator>();
 services.AddValidatorsFromAssemblyContaining<EditProfileValidator>();
 services.AddValidatorsFromAssemblyContaining<CreateGroupValidator>();
+services.AddValidatorsFromAssemblyContaining<EditGroupValidator>();
 services.AddValidatorsFromAssemblyContaining<CreateCourseValidator>();
+services.AddValidatorsFromAssemblyContaining<FilterCoursesValidator>();
+
+services.AddValidatorsFromAssemblyContaining<EditCourseStatusValidator>();
+services.AddValidatorsFromAssemblyContaining<EditCampusCourseRequirementsAndAnnotationsValidator>();
+services.AddValidatorsFromAssemblyContaining<CreateCourseNotificationValidator>();
+services.AddValidatorsFromAssemblyContaining<EditStudentMarkValidator>();
+services.AddValidatorsFromAssemblyContaining<EditStudentStatusValidator>();
+
+
 
 services.AddControllers()
     .AddJsonOptions(options =>

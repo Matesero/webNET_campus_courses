@@ -117,8 +117,6 @@ public class GroupsRepository : IGroupsRepository
         query = query
             .Include(t => t.User)
             .OrderBy(t => t.User.FullName);
-
-        Console.WriteLine(semester);
         
         query = query
             .Include(t => t.Group)

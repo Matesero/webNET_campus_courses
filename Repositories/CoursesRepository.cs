@@ -124,7 +124,7 @@ public class CoursesRepository : ICoursesRepository
     
     public async Task CheckExistence(Guid id)
     {
-        var course = await _context.Groups
+        var course = await _context.Courses
             .AsNoTracking()
             .Where(c => c.Id == id)
             .FirstOrDefaultAsync();

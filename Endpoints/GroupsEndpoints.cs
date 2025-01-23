@@ -103,8 +103,6 @@ public static class GroupsEndpoints
     {
         var response = await groupsService.GetReports(semester, campusGroupIds.ToList());
         
-        
-        
         return Results.Ok(response);
     }
 }

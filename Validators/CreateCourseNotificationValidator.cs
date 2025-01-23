@@ -8,7 +8,7 @@ public class CreateCourseNotificationValidator : AbstractValidator<CampusCourseN
     public CreateCourseNotificationValidator()
     {
         RuleFor(x => x.text)
-            .NotEmpty().WithMessage("Name is required");
+            .NotEmpty().WithMessage("Text is required");
         
         RuleFor(x => x.isImportant)
             .NotEmpty().WithMessage("IsImportant is required");
