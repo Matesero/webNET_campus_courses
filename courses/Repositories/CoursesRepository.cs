@@ -147,7 +147,7 @@ public class CoursesRepository : ICoursesRepository
         
         if (!string.IsNullOrEmpty(search))
         {
-            query = query.Where(c => c.Name.Contains(search));
+            query = query.Where(c => c.Name.ToLower().Contains(search.ToLower()));
         }
 
         query = query
@@ -159,6 +159,13 @@ public class CoursesRepository : ICoursesRepository
                 .Where(c => c.Status == "OpenForAssigning" &&
                             c.Students.Count(s =>
                                 s.Status == Enum.GetName(StudentStatuses.Accepted)) < c.MaximumStudentsCount);
+        }
+        else if (hasPlacesAndOpen.HasValue && !hasPlacesAndOpen.Value)
+        {
+            query = query
+                .Where(c => c.Status != "OpenForAssigning" ||
+                            c.Students.Count(s =>
+                                s.Status == Enum.GetName(StudentStatuses.Accepted)) >= c.MaximumStudentsCount);
         }
 
         if (semester.HasValue)

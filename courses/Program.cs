@@ -3,6 +3,7 @@ using courses.Extensions;
 using courses.Infrastructure;
 using courses.Infrastructure.QuartzJobs;
 using courses.Infrastructure.SenderMessages;
+using courses.Models.DTO;
 using courses.Models.Entities;
 using courses.Repositories;
 using courses.Services;
@@ -18,6 +19,7 @@ var configuration = builder.Configuration;
 services.Configure<JwtOptions>(configuration.GetSection("JwtOptions"));
 services.Configure<AuthorizationOptions>(configuration.GetSection("AuthorizationOptions"));
 services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
+services.Configure<UserLoginModel>(configuration.GetSection("SmtpSettings"));
 
 services.AddApiAuthentication(configuration);
 
@@ -89,11 +91,30 @@ services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 var app = builder.Build();
 
-using(var scope = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CoursesDbContext>();
     dbContext.MigrateDatabase();
+
+    if (!dbContext.Users.Any())
+    {
+        var adminUser = UserEntity.Create(
+            Guid.NewGuid(),
+            "Admin",
+            DateTime.Now.AddYears(-10).ToUniversalTime(),
+            "admin@example.com",
+            BCrypt.Net.BCrypt.EnhancedHashPassword("admin@example.com")
+        );
+
+        var adminRole = dbContext.Roles.FirstOrDefault(role => role.Name == "Admin");
+
+        adminUser.Roles.Add(adminRole);
+        dbContext.Users.Add(adminUser);
+        
+        dbContext.SaveChanges();
+    }
 }
+
 
 app.UseSwagger();
 app.UseSwaggerUI();

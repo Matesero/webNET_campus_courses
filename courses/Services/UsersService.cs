@@ -26,8 +26,7 @@ public class UsersService
         string fullName, 
         DateTime birthDate, 
         string email, 
-        string password, 
-        string confirmPassword)
+        string password)
     {
         var hashedPassword = _passwordHasher.Generate(password);
         
@@ -52,6 +51,11 @@ public class UsersService
     {
         var user = await _usersRepository.GetByEmail(email);
 
+        if (user == null)
+        {
+            throw new NotFoundException(email, "User", "Email");
+        }
+        
         var result = _passwordHasher.Verify(password, user.PasswordHash);
 
         if (result == false)
@@ -101,15 +105,23 @@ public class UsersService
         };
     } 
     
-    public async Task<List<UserShortModel>> GetAll()
+    public async Task<List<UserShortModel>> GetAll(Guid userId)
     {
-        var users = await _usersRepository.GetAll();
+        var userRole = await _usersRepository.GetRoles(userId);
 
-        return users.Select(u => new UserShortModel
+        if (userRole.isAdmin || userRole.isTeacher)
         {
-            id = u.Id,
-            fullName = u.FullName,
-        }).ToList();
+            var users = await _usersRepository.GetAll();
+
+            return users.Select(u => new UserShortModel
+            {
+                id = u.Id,
+                fullName = u.FullName,
+            }).ToList();
+            
+        }
+        
+        throw new ForbiddenException(); 
     }
 
     public async Task<UserRolesModel> GetRoles(Guid userId)

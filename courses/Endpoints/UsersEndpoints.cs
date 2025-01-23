@@ -11,9 +11,8 @@ public static class UsersEndpoints
 {
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/users", GetAllUsers).WithTags("Users")
-            .RequirePermissions(Permission.Read);
-
+        endpoints.MapGet("/users", GetAllUsers).WithTags("Users");
+        
         endpoints.MapGet("/roles", GetRoles).WithTags("Users");
         
         endpoints.MapPost("/registration", Register);
@@ -45,8 +44,7 @@ public static class UsersEndpoints
             request.fullName,
             request.birthDate,
             request.email,
-            request.password,
-            request.confirmPassword);
+            request.password);
 
         return Results.Ok(response);
     }
@@ -123,9 +121,12 @@ public static class UsersEndpoints
     
     [Authorize]
     private static async Task<IResult> GetAllUsers(
-        UsersService usersService)
+        UsersService usersService,
+        HttpContext context)
     {
-        var response = await usersService.GetAll();
+        var userId = context.User.GetUserId();
+        
+        var response = await usersService.GetAll(userId);
         
         return Results.Ok(response);
     }

@@ -5,8 +5,8 @@ namespace courses.Models.enums;
 public enum SortList
 {
     [EnumMember(Value = "CreatedAsc")]
-    CreatedAsc,
+    CreatedAsc = 1,
     
     [EnumMember(Value = "CreatedDesc")]
-    CreatedDesc,
+    CreatedDesc = 2,
 }

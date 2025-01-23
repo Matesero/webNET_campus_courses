@@ -111,7 +111,7 @@ public class CoursesService : ICoursesService
         
         if (courseEntity.Students.Any(student => student.UserId == userId))
         {
-            throw new BadRequestException("A student is already in this course");
+            throw new KeyNotFoundException("A student is already in this course");
         }
         
         if (courseEntity.Teachers.Any(teacher => teacher.UserId == userId))

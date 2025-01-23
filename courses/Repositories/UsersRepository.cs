@@ -58,8 +58,7 @@ public class UsersRepository : IUsersRepository
     {
         var userEntity = await _context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Email == email) ?? 
-                         throw new NotFoundException(email, "User", "email");
+            .FirstOrDefaultAsync(u => u.Email == email);
 
         return userEntity;
     }

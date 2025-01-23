@@ -1,5 +1,4 @@
-﻿using System.Net;
-using courses.Extensions;
+﻿using courses.Extensions;
 using courses.Services;
 using Microsoft.AspNetCore.Authorization;
 

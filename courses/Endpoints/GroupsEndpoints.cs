@@ -1,5 +1,4 @@
 ﻿using courses.Extensions;
-using courses.Infrastructure;
 using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
@@ -15,7 +14,7 @@ public static class GroupsEndpoints
     {
         var groups = endpoints.MapGroup("/groups").RequireAuthorization();
 
-        groups.MapGet("", GetAll).AllowAnonymous();
+        groups.MapGet("", GetAll);
         
         groups.MapPost("", CreateGroup).RequirePermissions(Permission.Create);
         

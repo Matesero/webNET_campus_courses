@@ -19,38 +19,32 @@ public static class CoursesEndpoints
         
         endpoints.MapPost("/groups/{groupId}", CreateCourse)
             .RequirePermissions(Permission.Create);
-        
-        courses.MapPost("/{id}/status", EditCoursesStatus)
-            .RequirePermissions(Permission.Update);
-        
-        courses.MapPost("/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations)
-            .RequirePermissions(Permission.Update);
+
+        courses.MapPost("/{id}/status", EditCoursesStatus);
+
+        courses.MapPut("/{id}/requirements-and-annotations", EditCoursesRequirementsAndAnnotations);
         
         courses.MapDelete("/{id}", DeleteCourse)
             .RequirePermissions(Permission.Delete);
-        
-        courses.MapPost("/{id}/notification", CreateNotification)
-            .RequirePermissions(Permission.Create);
+
+        courses.MapPost("/{id}/notification", CreateNotification);
         
         courses.MapPut("/{id}", EditCourse)
             .RequirePermissions(Permission.Update);
 
         courses.MapPost("/{id}/sign-up", SignUpCourse);
-        
-        courses.MapPost("/{id}/teacher", AddTeacherToCourse)
-            .RequirePermissions(Permission.Update);
+
+        courses.MapPost("/{id}/teacher", AddTeacherToCourse);
         
         courses.MapGet("/my", GetMyCourses);
         
         courses.MapGet("/teaching", GetTeachingCourses);
         
         courses.MapGet("/list", GetFilteredCourses);
-        
-        courses.MapPost("/{id}/student-status/{studentId}", ChangeStudentStatus)
-            .RequirePermissions(Permission.Update);
-        
-        courses.MapPost("/{id}/marks/{studentId}", ChangeStudentMark)
-            .RequirePermissions(Permission.Update);
+
+        courses.MapPost("/{id}/student-status/{studentId}", ChangeStudentStatus);
+
+        courses.MapPost("/{id}/marks/{studentId}", ChangeStudentMark);
         
         return endpoints;
     }
@@ -181,10 +175,10 @@ public static class CoursesEndpoints
     {
         var request = new CampusCourseFilterModel
         {
-            sort = sort,
-            search = search,
-            hasPlacesAndOpen = hasPlacesAndOpen,
-            semester = semester,
+            sort = sort ?? null,
+            search = search ?? null,
+            hasPlacesAndOpen = hasPlacesAndOpen ?? null,
+            semester = semester ?? null,
             page = page,
             pageSize = pageSize
         };
