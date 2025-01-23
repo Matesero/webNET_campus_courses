@@ -22,18 +22,8 @@ public class StudentsRepository : IStudentsRepository
     
     public async Task Add(StudentEntity studentEntity)
     {
-        try
-        {
-            await _context.Students.AddAsync(studentEntity);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException e)
-        {
-            if (e.InnerException != null && e.InnerException.Message.Contains("повторяющееся значение ключа"))
-            {
-                throw new InvalidOperationException("This user is already assigned to the course");
-            }
-        }
+        await _context.Students.AddAsync(studentEntity);
+        await _context.SaveChangesAsync();
     }
 
     public async Task Update(StudentEntity studentEntity)

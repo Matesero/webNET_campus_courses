@@ -101,7 +101,6 @@ public class CustomExceptionHandlerMiddleware
                     message = notFoundException.Message
                 });
                 break;
-
         }
         
         context.Response.ContentType = "application/json";

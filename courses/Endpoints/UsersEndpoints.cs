@@ -11,7 +11,8 @@ public static class UsersEndpoints
 {
     public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/users", GetAllUsers).WithTags("Users").RequirePermissions(Permission.Read); // только админ или главный чел
+        endpoints.MapGet("/users", GetAllUsers).WithTags("Users")
+            .RequirePermissions(Permission.Read);
 
         endpoints.MapGet("/roles", GetRoles).WithTags("Users");
         
@@ -73,15 +74,9 @@ public static class UsersEndpoints
         UsersService usersService,
         HttpContext context)
     {
-        var user = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");;
+        var userId = context.User.GetUserId();
         
-        if (user == null || string.IsNullOrEmpty(user.Value))
-        {
-            throw new Exception();
-        }
-        
-        var response = await usersService.GetProfile(user.Value);
+        var response = await usersService.GetProfile(userId);
         
         return Results.Ok(response);
     }
@@ -100,16 +95,10 @@ public static class UsersEndpoints
             throw new ValidationException(validationResult.Errors);
         }
          
-        var user = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");;
-        
-        if (user == null || string.IsNullOrEmpty(user.Value))
-        {
-            throw new Exception();
-        }
+        var userId = context.User.GetUserId();
         
         var response = await usersService.EditProfile(
-            user.Value, 
+            userId, 
             request.fullName, 
             request.birthDate);
         
@@ -146,15 +135,9 @@ public static class UsersEndpoints
         UsersService usersService,
         HttpContext context)
     {
-        var user = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");;
+        var userId = context.User.GetUserId();
         
-        if (user == null || string.IsNullOrEmpty(user.Value))
-        {
-            throw new Exception();
-        }
-        
-        var response = await usersService.GetRoles(user.Value);
+        var response = await usersService.GetRoles(userId);
         
         return Results.Ok(response);
     }

@@ -98,15 +98,9 @@ public static class CoursesEndpoints
         CoursesService coursesService,
         HttpContext context)
     {
-        var userId = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");;
+        var userId = context.User.GetUserId();
         
-        if (userId == null || string.IsNullOrEmpty(userId.Value))
-        {
-            throw new Exception();
-        }
-        
-        await coursesService.SignUp(userId.Value, courseId);
+        await coursesService.SignUp(userId, courseId);
         
         return Results.Ok();
     }
@@ -116,15 +110,9 @@ public static class CoursesEndpoints
         CoursesService coursesService,
         HttpContext context)
     {
-        var userId = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");
+        var userId = context.User.GetUserId();
 
-        if (userId == null || string.IsNullOrEmpty(userId.Value))
-        {
-            throw new Exception();
-        }
-
-        var response = await coursesService.GetMyCourses(userId.Value);
+        var response = await coursesService.GetMyCourses(userId);
 
         return Results.Ok(response);
     }
@@ -134,15 +122,9 @@ public static class CoursesEndpoints
         CoursesService coursesService,
         HttpContext context)
     {
-        var userId = context.User.Claims.FirstOrDefault(
-            c => c.Type == "userId");;
+        var userId = context.User.GetUserId();
         
-        if (userId == null || string.IsNullOrEmpty(userId.Value))
-        {
-            throw new Exception();
-        }
-        
-        var response = await coursesService.GetTeachingCourses(userId.Value);
+        var response = await coursesService.GetTeachingCourses(userId);
         
         return Results.Ok(response);
     }
@@ -150,6 +132,7 @@ public static class CoursesEndpoints
     [Authorize]
     private static async Task<IResult> CreateNotification(
         Guid id, 
+        HttpContext context,
         CampusCourseNotificationModel request,
         IValidator<CampusCourseNotificationModel> validator,
         CoursesService coursesService)
@@ -161,7 +144,13 @@ public static class CoursesEndpoints
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
         
-        var response = await coursesService.CreateNotification(id, request.text, request.isImportant);
+        var userId = context.User.GetUserId();
+        
+        var response = await coursesService.CreateNotification(
+            id, 
+            userId, 
+            request.text, 
+            request.isImportant);
         
         return Results.Ok(response);
     }
@@ -169,9 +158,12 @@ public static class CoursesEndpoints
     [Authorize]
     private static async Task<IResult> GetCourseDetailedInfo(
         CoursesService coursesService,
+        HttpContext context,
         Guid id)
     {
-        var response = await coursesService.GetDetailedInfo(id);
+        var userId = context.User.GetUserId();
+        
+        var response = await coursesService.GetDetailedInfo(id, userId);
         
         return Results.Ok(response);
     }
@@ -220,6 +212,7 @@ public static class CoursesEndpoints
         CoursesService coursesService,
         EditCourseStatusModel request,
         IValidator<EditCourseStatusModel> validator,
+        HttpContext context,
         Guid id)
     {
         var validationResult = await validator.ValidateAsync(request);
@@ -229,7 +222,9 @@ public static class CoursesEndpoints
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
         
-        var response = await coursesService.EditCoursesStatus(id, request.status);
+        var userId = context.User.GetUserId();
+        
+        var response = await coursesService.EditCoursesStatus(id, userId, request.status);
         
         return Results.Ok(response);
     }
@@ -239,6 +234,7 @@ public static class CoursesEndpoints
         CoursesService coursesService,
         EditCampusCourseRequirementsAndAnnotationsModel request,
         IValidator<EditCampusCourseRequirementsAndAnnotationsModel> validator,
+        HttpContext context,
         Guid id)
     {
         var validationResult = await validator.ValidateAsync(request);
@@ -248,8 +244,11 @@ public static class CoursesEndpoints
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
         
+        var userId = context.User.GetUserId();
+        
         var response = await coursesService.EditCoursesRequirementsAndAnnotations(
             id, 
+            userId,
             request.requirements, 
             request.annotations);
         
@@ -260,9 +259,12 @@ public static class CoursesEndpoints
     private static async Task<IResult> AddTeacherToCourse(
         CoursesService coursesService,
         AddTeacherToCourseModel request,
+        HttpContext context,
         Guid id)
     {
-        var response = await coursesService.AddTeacherToCourse(id, request.userId);
+        var userId = context.User.GetUserId();
+        
+        var response = await coursesService.AddTeacherToCourse(id, userId, request.userId);
         
         return Results.Ok(response);
     }
@@ -299,7 +301,8 @@ public static class CoursesEndpoints
         IValidator<EditCourseStudentStatusModel> validator,
         CoursesService coursesService,
         [FromQuery] Guid studentId,
-        [FromQuery] Guid id)
+        [FromQuery] Guid id,
+        HttpContext context)
     {
         var validationResult = await validator.ValidateAsync(request);
 
@@ -307,9 +310,12 @@ public static class CoursesEndpoints
         {
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
+
+        var userId = context.User.GetUserId();
         
         var response = await coursesService.ChangeStudentStatus(
             id, 
+            userId,
             studentId, 
             request.status);
         
@@ -322,7 +328,8 @@ public static class CoursesEndpoints
         IValidator<EditCourseStudentMarkModel> validator,
         CoursesService coursesService,
         [FromQuery] Guid studentId,
-        [FromQuery] Guid id)
+        [FromQuery] Guid id,
+        HttpContext context)
     {
         var validationResult = await validator.ValidateAsync(request);
 
@@ -331,8 +338,11 @@ public static class CoursesEndpoints
             throw new FluentValidation.ValidationException(validationResult.Errors);
         }
         
+        var userId = context.User.GetUserId();
+        
         var response = await coursesService.ChangeStudentMark(
             id, 
+            userId,
             studentId, 
             request.markType, 
             request.mark);

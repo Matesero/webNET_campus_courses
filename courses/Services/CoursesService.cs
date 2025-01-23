@@ -90,15 +90,10 @@ public class CoursesService : ICoursesService
     public async Task Delete(Guid id)
     {
         await _coursesRepository.Delete(id);
-    }
+    }  
 
-    public async Task SignUp(string id, Guid courseId)
+    public async Task SignUp(Guid userId, Guid courseId)
     {
-        if (!Guid.TryParse(id, out var userId))
-        {
-            throw new Exception(); // обработать
-        }
-        
         var courseEntity = await _coursesRepository.GetByIdWithStudentsAndTeachers(courseId);
 
         if (courseEntity.Status != Enum.GetName(CourseStatuses.OpenForAssigning))
@@ -114,12 +109,12 @@ public class CoursesService : ICoursesService
             throw new KeyNotFoundException($"Course requires at least 2 slot"); // Обработать
         }
         
-        if (courseEntity.Students.Any(student => student.UserId.ToString() == id))
+        if (courseEntity.Students.Any(student => student.UserId == userId))
         {
             throw new KeyNotFoundException($"Course requires at least 3 slot");
         }
         
-        if (courseEntity.Teachers.Any(teacher => teacher.UserId.ToString() == id))
+        if (courseEntity.Teachers.Any(teacher => teacher.UserId == userId))
         {
             throw new KeyNotFoundException($"Course requires at least 4 slot");
         }
@@ -129,32 +124,33 @@ public class CoursesService : ICoursesService
         await _studentsRepository.Add(studentEntity);
     }
 
-    public async Task<List<CampusCoursePreviewModel>> GetMyCourses(string id)
+    public async Task<List<CampusCoursePreviewModel>> GetMyCourses(Guid userId)
     {
-        if (!Guid.TryParse(id, out var userId))
-        {
-            throw new Exception();
-        }
-        
         var courses = await _coursesRepository.GetByStudentId(userId);
         
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
     
-    public async Task<List<CampusCoursePreviewModel>> GetTeachingCourses(string id)
+    public async Task<List<CampusCoursePreviewModel>> GetTeachingCourses(Guid userId)
     {
-        if (!Guid.TryParse(id, out var userId))
-        {
-            throw new Exception(); // обработать
-        }
-        
         var courses = await _coursesRepository.GetByTeacherId(userId);
         
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
-    public async Task<CampusCourseDetailsModel> CreateNotification(Guid courseId, string text, bool isImportant)
+    public async Task<CampusCourseDetailsModel> CreateNotification(
+        Guid courseId, 
+        Guid userId, 
+        string text, bool 
+            isImportant)
     {
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 4)
+        {
+            throw new Exception(); // обработать
+        }
+
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
 
         var notificationEntity = NotificationEntity.Create(courseId, text, isImportant);
@@ -163,14 +159,16 @@ public class CoursesService : ICoursesService
         
         courseEntity.Notifications.Add(notificationEntity);
         
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
 
-    public async Task<CampusCourseDetailsModel> GetDetailedInfo(Guid id)
+    public async Task<CampusCourseDetailsModel> GetDetailedInfo(Guid courseId, Guid userId)
     {
-        var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+        
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
 
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
 
     public async Task<List<CampusCoursePreviewModel>> GetFilteredCourses(
@@ -193,9 +191,19 @@ public class CoursesService : ICoursesService
         return courses.Select(course => ConvertEntityToPreviewModel(course)).ToList();
     }
 
-    public async Task<CampusCourseDetailsModel> EditCoursesStatus(Guid id, string statusString)
+    public async Task<CampusCourseDetailsModel> EditCoursesStatus(
+        Guid courseId, 
+        Guid userId,
+        string statusString)
     {
-        var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 4)
+        {
+            throw new Exception(); // обработать
+        }
+        
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
         
         var status = (CourseStatuses)Enum.Parse(typeof(CourseStatuses), statusString);
         
@@ -214,26 +222,44 @@ public class CoursesService : ICoursesService
         
         await _coursesRepository.Update(courseEntity);
         
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
     
     public async Task<CampusCourseDetailsModel> EditCoursesRequirementsAndAnnotations(
-        Guid id,
+        Guid courseId,
+        Guid userId,
         string requirements, 
         string annotations)
     {
-        var courseEntity = await _coursesRepository.GetDetailedInfoById(id);
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 4)
+        {
+            throw new Exception(); // обработать
+        }
+        
+        var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
         
         courseEntity.Requirements = requirements;
         courseEntity.Annotations = annotations;
         
         await _coursesRepository.Update(courseEntity);
         
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
     
-    public async Task<CampusCourseDetailsModel> AddTeacherToCourse(Guid courseId, Guid teacherId)
+    public async Task<CampusCourseDetailsModel> AddTeacherToCourse(
+        Guid courseId,
+        Guid userId,
+        Guid teacherId)
     {
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 5)
+        {
+            throw new Exception(); // обработать
+        }
+        
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
 
         if (courseEntity.Students.Any(student => student.UserId == teacherId) ||
@@ -255,20 +281,24 @@ public class CoursesService : ICoursesService
         courseEntity.Teachers.Add(teacher);
         teacher.User = user;
         
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
 
-    private CampusCourseDetailsModel ConvertEntityToDetailedModel(CourseEntity courseEntity)
+    private CampusCourseDetailsModel ConvertEntityToDetailedModel(
+        CourseEntity courseEntity, 
+        RoleHierarchy userRole,
+        Guid userId)
     {
         var students = courseEntity.Students
+            .Where(student => student.UserId == userId || (int)userRole > 3 || student.Status == "Accepted")
             .Select(student => new CampusCourseStudentModel
         {
             id = student.UserId,
             name = student.User.FullName,
             email = student.User.Email,
             status = student.Status,
-            midtermResult = student.MidtermResult, 
-            finalResult = student.FinalResult,
+            midtermResult = (int)userRole > 3 || (student.UserId == userId && student.Status == "Accepted") ? student.MidtermResult : null, 
+            finalResult = (int)userRole > 3 || (student.UserId == userId && student.Status == "Accepted") ? student.FinalResult : null
         }).ToList();
         
         var teachers = courseEntity.Teachers
@@ -344,11 +374,22 @@ public class CoursesService : ICoursesService
         courseEntity.Annotations = annotations;
         
         await _coursesRepository.Update(courseEntity);
-        return ConvertEntityToDetailedModel(courseEntity); 
+        return ConvertEntityToDetailedModel(courseEntity, RoleHierarchy.admin, id); 
     }
 
-    public async Task<CampusCourseDetailsModel> ChangeStudentStatus(Guid courseId, Guid studentId, string status)
+    public async Task<CampusCourseDetailsModel> ChangeStudentStatus(
+        Guid courseId, 
+        Guid userId,
+        Guid studentId, 
+        string status)
     {
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 4)
+        {
+            throw new Exception(); // обработать
+        }
+        
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
         
         var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
@@ -372,22 +413,35 @@ public class CoursesService : ICoursesService
         
         await _studentsRepository.Update(student);
          
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
     
     public async Task<CampusCourseDetailsModel> ChangeStudentMark(
         Guid courseId, 
+        Guid userId,
         Guid studentId, 
         string markType, 
         string mark)
     {
+        var userRole = await _usersRepository.GetRoleHierarchy(courseId, userId);
+
+        if ((int)userRole < 4)
+        {
+            throw new Exception(); // обработать
+        }
+        
         var courseEntity = await _coursesRepository.GetDetailedInfoById(courseId);
         
         var student = courseEntity.Students.FirstOrDefault(student => student.UserId == studentId);
 
         if (student is null)
         {
-            throw new KeyNotFoundException($"Student with id {studentId} not found");
+            throw new KeyNotFoundException($"Student with id {studentId} not found"); // обработать
+        }
+
+        if (student.Status != Enum.GetName(StudentStatuses.Accepted))
+        {
+            throw new Exception(); // обработать
         }
         
         if (markType == Enum.GetName(MarkType.Midterm))
@@ -406,6 +460,6 @@ public class CoursesService : ICoursesService
         
         await _studentsRepository.Update(student);
          
-        return ConvertEntityToDetailedModel(courseEntity);
+        return ConvertEntityToDetailedModel(courseEntity, userRole, userId);
     }
 }

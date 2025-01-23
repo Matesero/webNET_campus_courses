@@ -22,7 +22,12 @@ public class UsersService
         _jwtProvider = jwtProvider;
     }
     
-    public async Task<TokenResponse> Register(string fullName, DateTime birthDate, string email, string password, string confirmPassword)
+    public async Task<TokenResponse> Register(
+        string fullName, 
+        DateTime birthDate, 
+        string email, 
+        string password, 
+        string confirmPassword)
     {
         var hashedPassword = _passwordHasher.Generate(password);
         
@@ -62,14 +67,9 @@ public class UsersService
         return response;
     }
     
-    public async Task<UserProfileModel> GetProfile(string userId)
+    public async Task<UserProfileModel> GetProfile(Guid userId)
     {
-        if (!Guid.TryParse(userId, out var id))
-        {
-            throw new Exception(); // обработать
-        }
-
-        var profile = await _usersRepository.GetById(id);
+        var profile = await _usersRepository.GetById(userId);
 
         return new UserProfileModel
         {
@@ -84,19 +84,14 @@ public class UsersService
         return await _usersRepository.GetByEmail(email);
     } 
     
-    public async Task<UserProfileModel> EditProfile(string userId, string fullName, DateTime birthDate)
+    public async Task<UserProfileModel> EditProfile(Guid userId, string fullName, DateTime birthDate)
     {
-        if (!Guid.TryParse(userId, out var id))
-        {
-            throw new Exception(); // обработать
-        }
-
-        var profile = await _usersRepository.GetById(id);
+        var profile = await _usersRepository.GetById(userId);
         
         profile.FullName = fullName;
         profile.BirthDate = birthDate;
         
-        await _usersRepository.Update(id, fullName, birthDate);
+        await _usersRepository.Update(userId, fullName, birthDate);
 
         return new UserProfileModel
         {
@@ -117,13 +112,8 @@ public class UsersService
         }).ToList();
     }
 
-    public async Task<UserRolesModel> GetRoles(string userId)
+    public async Task<UserRolesModel> GetRoles(Guid userId)
     {
-        if (!Guid.TryParse(userId, out var id))
-        {
-            throw new Exception(); // обработать
-        }
-
-        return await _usersRepository.GetRoles(id);
+        return await _usersRepository.GetRoles(userId);
     }
 }

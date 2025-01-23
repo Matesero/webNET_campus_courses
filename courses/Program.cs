@@ -75,7 +75,7 @@ builder.Services.AddQuartz(quartz =>
     quartz.AddTrigger(opts => opts
         .ForJob(jobKey2)
         .WithIdentity("ClearBlackTokensTrigger")
-        .WithCronSchedule("0 00 23 ? * * *"));
+        .WithCronSchedule("0 0 23 ? * * *"));
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 

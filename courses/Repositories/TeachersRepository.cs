@@ -22,12 +22,4 @@ public class TeachersRepository : ITeachersRepository
         await _context.Teachers.AddAsync(teacherEntity);
         await _context.SaveChangesAsync();
     }
-    
-    public async Task GetByCourseAndUserIds(Guid courseId, Guid userId)
-    {
-        await _context.Teachers.AsNoTracking()
-            .Where(t => t.CourseId == courseId && t.UserId == userId)
-            .FirstOrDefaultAsync();
-        await _context.SaveChangesAsync();
-    }
 }
