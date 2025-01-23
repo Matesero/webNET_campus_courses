@@ -62,8 +62,8 @@ services.AddControllers()
 builder.Services.AddQuartz(quartz =>
 {
     quartz.UseMicrosoftDependencyInjectionJobFactory(); 
+    
     var jobKey = new JobKey("NotificationStartCourseJob");
-
     quartz.AddJob<NotificationStartCourseJob>(opts => opts.WithIdentity(jobKey));  
     quartz.AddTrigger(opts => opts
         .ForJob(jobKey)  
@@ -71,12 +71,11 @@ builder.Services.AddQuartz(quartz =>
         .WithCronSchedule("0 0 12 L FEB,AUG ? *")); 
     
     var jobKey2 = new JobKey("ClearBlackTokensJob");
-    
     quartz.AddJob<ClearBlackTokensJob>(opts => opts.WithIdentity(jobKey2));
     quartz.AddTrigger(opts => opts
         .ForJob(jobKey2)
         .WithIdentity("ClearBlackTokensTrigger")
-        .WithCronSchedule("0 12 40 ? * * *"));
+        .WithCronSchedule("0 00 23 ? * * *"));
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
@@ -89,6 +88,12 @@ services.AddScoped<IJwtProvider, JwtProvider>();
 services.AddScoped<IPasswordHasher, PasswordHasher>();
 
 var app = builder.Build();
+
+using(var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<CoursesDbContext>();
+    dbContext.MigrateDatabase();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();

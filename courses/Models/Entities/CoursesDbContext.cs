@@ -5,10 +5,20 @@ using Microsoft.Extensions.Options;
 
 namespace courses.Models.Entities;
 
-public class CoursesDbContext(
-    DbContextOptions<CoursesDbContext> options,
-    IOptions<AuthorizationOptions> authOptions) : DbContext(options)
+public class CoursesDbContext : DbContext
 {
+    private readonly IConfiguration _configuration;
+    private readonly IOptions<AuthorizationOptions> _authOptions;
+
+    public CoursesDbContext(
+        DbContextOptions<CoursesDbContext> options, 
+        IOptions<AuthorizationOptions> authOptions, 
+        IConfiguration configuration) : base(options)
+    {
+        _configuration = configuration;
+        _authOptions = authOptions;
+    }
+    
     public DbSet<GroupEntity> Groups { get; set; }
     public DbSet<CourseEntity> Courses { get; set; }
     public DbSet<NotificationEntity> Notifications { get; set; }
@@ -17,6 +27,15 @@ public class CoursesDbContext(
     public DbSet<StudentEntity> Students { get; set; }
     public DbSet<RoleEntity> Roles { get; set; }
     public DbSet<BlackTokenEntity> BlackTokens { get; set; }
+    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            var connectionString = _configuration.GetConnectionString("CoursesDbContext");
+            optionsBuilder.UseNpgsql(connectionString);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,9 +47,13 @@ public class CoursesDbContext(
         modelBuilder.ApplyConfiguration(new StudentConfiguration());
         modelBuilder.ApplyConfiguration(new RoleConfiguration());
         modelBuilder.ApplyConfiguration(new PermissionConfiguration());
-        modelBuilder.ApplyConfiguration(new RolePermissionConfiguration(authOptions.Value));
+        modelBuilder.ApplyConfiguration(new RolePermissionConfiguration(_authOptions.Value));
         
         base.OnModelCreating(modelBuilder);
     }
-
+    
+    public void MigrateDatabase()
+    {
+        Database.Migrate();
+    }
 }

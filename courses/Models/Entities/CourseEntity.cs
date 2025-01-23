@@ -54,8 +54,6 @@ public class CourseEntity
     [JsonIgnore]
     public GroupEntity Group { get; set; }
     
-    public DateTime? NotificationDate { get; set; }
-    
     public DateTime CreatedDate { get; set; }
         
     public List<TeacherEntity> Teachers { get; set; } = [];

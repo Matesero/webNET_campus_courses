@@ -52,8 +52,6 @@ public class SenderMessages: ISenderMessages
             {
                 Console.WriteLine($"General Exception: {ex.Message}");
             }
-
-
         }
     }
 

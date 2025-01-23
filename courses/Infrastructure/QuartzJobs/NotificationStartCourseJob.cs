@@ -9,8 +9,6 @@ public class NotificationStartCourseJob: IJob
 {
     private readonly CoursesDbContext _context;
     private readonly ISenderMessages _senderMessages;
-    private readonly string _body = "test";
-    private readonly string _subject = "test";
     
     public NotificationStartCourseJob(
         CoursesDbContext context, 
@@ -23,9 +21,10 @@ public class NotificationStartCourseJob: IJob
     public async Task Execute(IJobExecutionContext context)
     {
         var today = DateTime.UtcNow;
-        
+
         var coursesQuery = _context.Courses
-            .Where(course => course.StartYear == DateTime.Today.Year && course.Status != "Finished");
+            .Where(course => course.StartYear == DateTime.Today.Year && course.Status != "Finished" &&
+                             course.Status != "Started");
 
         if (today.Month == 2)
         {
@@ -35,21 +34,26 @@ public class NotificationStartCourseJob: IJob
         {
             coursesQuery = coursesQuery.Where(course => course.Semester == "Autumn");
         }
-        
+
         var courses = await coursesQuery
             .Include(course => course.Students
                 .Where(student => student.Status == "Accepted"))
             .ThenInclude(student => student.User)
             .ToListAsync();
-
+        
         courses.ForEach(course =>
         {
             course.Students.ForEach(student =>
             {
-                _senderMessages.SendMessage(student.User.Email, _subject, _body);
+                var email = student.User.Email;
+                var subject = $"Курс {course.Name} начнется завтра!";
+                var body = $"Здравствуйте, {student.User.FullName}!\n\n" +
+                           $"Напоминаем, что завтра начнется курс \"{course.Name}\". " +
+                           $"Пожалуйста, убедитесь, что вы готовы.\n\n" +
+                           "С уважением, команда организаторов.";
+                _senderMessages.SendMessage(email, subject, body);
             });
         });
     }
-
 }
 

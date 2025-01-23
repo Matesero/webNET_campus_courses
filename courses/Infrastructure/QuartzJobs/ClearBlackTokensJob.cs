@@ -22,8 +22,6 @@ public class ClearBlackTokensJob: IJob
             .AsNoTracking()
             .Where(token => token.ExpirationDate + day < today )
             .ToListAsync();
-
-        Console.WriteLine(tokens.Count);
         
         if (tokens.Any())
         {
