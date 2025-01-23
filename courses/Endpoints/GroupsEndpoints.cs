@@ -24,7 +24,7 @@ public static class GroupsEndpoints
 
         groups.MapGet("/{id}", GetListCourses);
         
-        endpoints.MapPost("/report", Report).RequirePermissions(Permission.Read).WithTags("Report");
+        endpoints.MapGet("/report", Report).RequirePermissions(Permission.Read).WithTags("Report");
         
         return endpoints;
     }
