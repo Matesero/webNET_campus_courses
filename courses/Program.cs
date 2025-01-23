@@ -1,12 +1,15 @@
 using System.Text.Json.Serialization;
 using courses.Extensions;
 using courses.Infrastructure;
+using courses.Infrastructure.QuartzJobs;
+using courses.Infrastructure.SenderMessages;
 using courses.Models.Entities;
 using courses.Repositories;
 using courses.Services;
 using courses.Validators;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -14,6 +17,7 @@ var configuration = builder.Configuration;
 
 services.Configure<JwtOptions>(configuration.GetSection("JwtOptions"));
 services.Configure<AuthorizationOptions>(configuration.GetSection("AuthorizationOptions"));
+services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
 
 services.AddApiAuthentication(configuration);
 
@@ -33,6 +37,7 @@ services.AddScoped<ITeachersRepository, TeachersRepository>();
 services.AddScoped<IStudentsRepository, StudentsRepository>();
 services.AddScoped<INotificationsRepository, NotificationsRepository>();
 services.AddScoped<IBlackTokensRepository, BlackTokensRepository>();
+services.AddScoped<ISenderMessages, SenderMessages>();
 
 services.AddValidatorsFromAssemblyContaining<RegistrationValidator>();
 services.AddValidatorsFromAssemblyContaining<LoginValidator>();
@@ -41,14 +46,11 @@ services.AddValidatorsFromAssemblyContaining<CreateGroupValidator>();
 services.AddValidatorsFromAssemblyContaining<EditGroupValidator>();
 services.AddValidatorsFromAssemblyContaining<CreateCourseValidator>();
 services.AddValidatorsFromAssemblyContaining<FilterCoursesValidator>();
-
 services.AddValidatorsFromAssemblyContaining<EditCourseStatusValidator>();
 services.AddValidatorsFromAssemblyContaining<EditCampusCourseRequirementsAndAnnotationsValidator>();
 services.AddValidatorsFromAssemblyContaining<CreateCourseNotificationValidator>();
 services.AddValidatorsFromAssemblyContaining<EditStudentMarkValidator>();
 services.AddValidatorsFromAssemblyContaining<EditStudentStatusValidator>();
-
-
 
 services.AddControllers()
     .AddJsonOptions(options =>
@@ -56,6 +58,27 @@ services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
     });
+
+builder.Services.AddQuartz(quartz =>
+{
+    quartz.UseMicrosoftDependencyInjectionJobFactory(); 
+    var jobKey = new JobKey("NotificationStartCourseJob");
+
+    quartz.AddJob<NotificationStartCourseJob>(opts => opts.WithIdentity(jobKey));  
+    quartz.AddTrigger(opts => opts
+        .ForJob(jobKey)  
+        .WithIdentity("NotificationStartCourseTrigger")
+        .WithCronSchedule("0 0 12 L FEB,AUG ? *")); 
+    
+    var jobKey2 = new JobKey("ClearBlackTokensJob");
+    
+    quartz.AddJob<ClearBlackTokensJob>(opts => opts.WithIdentity(jobKey2));
+    quartz.AddTrigger(opts => opts
+        .ForJob(jobKey2)
+        .WithIdentity("ClearBlackTokensTrigger")
+        .WithCronSchedule("0 12 40 ? * * *"));
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 services.AddScoped<UsersService>();
 services.AddScoped<GroupsService>();

@@ -143,7 +143,7 @@ public static class CoursesEndpoints
         }
         
         var response = await coursesService.GetTeachingCourses(userId.Value);
-
+        
         return Results.Ok(response);
     }
 

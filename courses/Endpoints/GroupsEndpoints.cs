@@ -1,4 +1,5 @@
 ﻿using courses.Extensions;
+using courses.Infrastructure;
 using courses.Models.DTO;
 using courses.Models.enums;
 using courses.Services;
@@ -28,7 +29,7 @@ public static class GroupsEndpoints
         
         return endpoints;
     }
-
+    
     [Authorize]
     private static async Task<IResult> GetAll(
         GroupsService groupsService)
