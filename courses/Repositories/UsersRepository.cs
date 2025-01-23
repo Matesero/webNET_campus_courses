@@ -23,6 +23,8 @@ public interface IUsersRepository
     Task<UserRolesModel> GetRoles(Guid userId);
     
     Task CheckExistence(Guid id);
+
+    Task<RoleHierarchy> GetRoleHierarchy(Guid courseId, Guid userId);
 }
 
 public class UsersRepository : IUsersRepository
@@ -96,6 +98,45 @@ public class UsersRepository : IUsersRepository
             .ToListAsync();
         
         return users;
+    }
+    
+    public async Task<RoleHierarchy> GetRoleHierarchy(Guid courseId, Guid userId)
+    {
+        var isAdmin = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Include(u => u.Roles)
+            .SelectMany(u => u.Roles.Select(r => r.Id))
+            .ToListAsync();
+    
+        if (isAdmin.Contains((int)Role.Admin))
+        {
+            return RoleHierarchy.admin;
+        }
+
+        var teacher = await _context.Courses
+            .AsNoTracking()
+            .Where(c => c.Id == courseId)
+            .SelectMany(c => c.Teachers.Where(t => t.UserId == userId))
+            .FirstOrDefaultAsync();
+
+        if (teacher != null)
+        {
+            return teacher.IsMain ? RoleHierarchy.mainTeacher : RoleHierarchy.teacher;
+        }
+
+        var student = await _context.Courses
+            .AsNoTracking()
+            .Where(c => c.Id == courseId)
+            .SelectMany(c => c.Students.Where(s => s.UserId == userId))
+            .FirstOrDefaultAsync();
+
+        if (student != null)
+        {
+            return student.Status == "Accepted" ? RoleHierarchy.acceptedStudent : RoleHierarchy.student;
+        }
+
+        return RoleHierarchy.user;
     }
 
     public async Task<UserRolesModel> GetRoles(Guid userId)
